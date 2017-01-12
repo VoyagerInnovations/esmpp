@@ -65,6 +65,11 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, ?ESME_ROK:32, _S
 handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, ?ESME_ROK:32, _Seq:32, _Data/binary>>}, #state{from=Client} = State) ->
   gen_server:reply(Client, ok),  
   {noreply, State};
+handle_info({tcp_closed, _Socket}, State) ->
+  {noreply, State#state{
+    connected = false,
+    binding   = 0
+  }};
 handle_info(_Info, State) ->
   io:format("INFO: ~p", [_Info]),
   {noreply, State}.
