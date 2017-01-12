@@ -145,6 +145,7 @@ send_sms(Conn, Sender, Destination, TmpMessage, Options) ->
     dst_addr_ton  = DstAddrTon,
     dst_addr_npi  = DstAddrNpi,
     dst_addr      = Destination,
+    data_coding   = DataCoding,
     esm_class     = EsmClass,
     protocol_id   = ProtocolId,
     priority_flag = PriorityFlag,
