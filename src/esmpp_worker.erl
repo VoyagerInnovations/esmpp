@@ -44,9 +44,13 @@ init([#{host := Host, port := Port},  BindRecord]) ->
 handle_call({submit_sm, _SubmitSm, _Options}, _From, #state{connected=false} = State) ->
   {reply, {error, not_connected}, State}; 
 handle_call({submit_sm, SubmitSm, _Options}, From, #state{socket=Socket, seq_num=SeqNum} = State) ->
-  {pdu, Packet} = esmpp_pdu:submit_sm(SeqNum + 1, SubmitSm), 
+  NewSeqNum = SeqNum + 1,
+  {pdu, Packet} = esmpp_pdu:submit_sm(NewSeqNum, SubmitSm), 
   send(Socket, Packet),
-  {noreply, State#state{from=From}}; 
+  {noreply, State#state{
+    from    = From,
+    seq_num = NewSeqNum
+  }}; 
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
@@ -54,7 +58,7 @@ handle_call(_Request, _From, State) ->
 handle_cast(_Message, State) ->
   {noreply, State}.
 
-%% @private
+%% @private Successfully binded as transmitter
 handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, ?ESME_ROK:32, _Seq:32, _Data/binary>>}, State) ->
   {noreply, State#state{
     connected = true,
@@ -62,9 +66,14 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, ?ESME_ROK:32, _S
     status    = ?ESME_ROK,
     socket    = Socket
   }};
+
+%% @private Successfully sent a submit_sm request
 handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, ?ESME_ROK:32, _Seq:32, _Data/binary>>}, #state{from=Client} = State) ->
-  gen_server:reply(Client, ok),  
+  gen_server:reply(Client, ok),
   {noreply, State};
+
+%% @private Connection closed
+%% TODO: Reconnection
 handle_info({tcp_closed, _Socket}, State) ->
   {noreply, State#state{
     connected = false,
