@@ -23,7 +23,7 @@
   binding   =  0    :: integer(),
   status    = -1    :: integer(),
   socket            :: port(),
-  from              :: {pid(), term()}
+  from_list = #{}   :: map()
 }).
 
 %% ----------------------------------------------------------------------------
@@ -60,13 +60,14 @@ handle_call({submit_sm, _SubmitSm, _Options}, _From,
 %% @private submit_sm packet sending
 %% ----------------------------------------------------------------------------
 handle_call({submit_sm, SubmitSm, _Options}, From, 
-             #state{socket=Socket, seq_num=SeqNum} = State) ->
-  NewSeqNum = increment(SeqNum),
-  {pdu, Packet} = esmpp_pdu:submit_sm(NewSeqNum, SubmitSm), 
+             #state{socket=Socket, seq_num=Seq, from_list=Clients} = State) ->
+  NewSeq = increment(Seq),
+  {pdu, Packet} = esmpp_pdu:submit_sm(NewSeq, SubmitSm), 
   send(Socket, Packet),
+  NewClients = maps:put(NewSeq, From, Clients),
   {noreply, State#state{
-    from    = From,
-    seq_num = NewSeqNum
+    from_list = NewClients,
+    seq_num   = NewSeq
   }}; 
 
 %% ----------------------------------------------------------------------------
@@ -119,10 +120,13 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSCEIVER_RESP:32, ?ESME_ROK:32,
 %% @private Successfully sent a submit_sm request
 %% ----------------------------------------------------------------------------
 handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, ?ESME_ROK:32,
-                             _Seq:32, _Data/binary>>}, 
-                             #state{from=Client} = State) ->
+                              Seq:32, _Data/binary>>}, 
+                             #state{from_list=Clients} = State) ->
+  Client = maps:get(Seq, Clients, '__undefined__'),
   gen_server:reply(Client, ok),
-  {noreply, State};
+  {noreply, State#state{
+    from_list = maps:remove(Seq, Clients)
+  }};
 
 %% ----------------------------------------------------------------------------
 %% @private Connection closed
@@ -131,6 +135,7 @@ handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, ?ESME_ROK:32,
 handle_info({tcp_closed, _Socket}, State) ->
   {noreply, State#state{
     connected = false,
+    status    = -1,
     binding   = 0
   }};
 
@@ -163,5 +168,5 @@ send(Socket, Packet) ->
   ok = gen_tcp:send(Socket, Packet).
 
 %% @private
-increment(SeqNum) ->
-  SeqNum + 1.
+increment(Seq) ->
+  Seq + 1.
