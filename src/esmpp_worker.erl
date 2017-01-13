@@ -61,7 +61,7 @@ handle_call({submit_sm, _SubmitSm, _Options}, _From,
 %% ----------------------------------------------------------------------------
 handle_call({submit_sm, SubmitSm, _Options}, From, 
              #state{socket=Socket, seq_num=SeqNum} = State) ->
-  NewSeqNum = SeqNum + 1,
+  NewSeqNum = increment(SeqNum),
   {pdu, Packet} = esmpp_pdu:submit_sm(NewSeqNum, SubmitSm), 
   send(Socket, Packet),
   {noreply, State#state{
@@ -161,3 +161,7 @@ get_socket(Host, Port) ->
 %% @private
 send(Socket, Packet) ->
   ok = gen_tcp:send(Socket, Packet).
+
+%% @private
+increment(SeqNum) ->
+  SeqNum + 1.
