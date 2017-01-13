@@ -104,6 +104,15 @@ handle_info(timeout, #conn_state{host=Host, port=Port,
   }};
 
 %% ----------------------------------------------------------------------------
+%% @private generic_nack receiver
+%% ----------------------------------------------------------------------------
+handle_info({tcp, _Socket, <<_Len:32, ?GENERIC_NACK:32, Status:32,
+                             _Seq:32, _Data/binary>>} = PDU, State) ->
+  StatusAtom = esmpp_status:to_atom(Status),
+  io:format("[generic_nack] ~p: ~p", [StatusAtom, PDU]),
+  {noreply, State};
+
+%% ----------------------------------------------------------------------------
 %% @private Successfully binded as receiver
 %% ----------------------------------------------------------------------------
 handle_info({tcp, Socket, <<_Len:32, ?BIND_RECEIVER_RESP:32, ?ESME_ROK:32, 
@@ -128,7 +137,7 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, ?ESME_ROK:32,
   }};
 
 %% ----------------------------------------------------------------------------
-%% @private Successfully binded as tranceiver 
+%% @private Successfully binded as transceiver 
 %% ----------------------------------------------------------------------------
 handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSCEIVER_RESP:32, ?ESME_ROK:32,
                             _Seq:32, _Data/binary>>}, State) ->
