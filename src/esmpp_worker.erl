@@ -45,13 +45,22 @@ init([#{host := Host, port := Port},  BindRecord]) ->
 %% ----------------------------------------------------------------------------
 %% @private submit_sm attempt when not connected
 %% ----------------------------------------------------------------------------
-handle_call({submit_sm, _SubmitSm, _Options}, _From, #state{connected=false} = State) ->
+handle_call({submit_sm, _SubmitSm, _Options}, _From,
+             #state{connected=false} = State) ->
   {reply, {error, not_connected}, State}; 
+
+%% ----------------------------------------------------------------------------
+%% @private submit_sm attempt when bound as receiver
+%% ----------------------------------------------------------------------------
+handle_call({submit_sm, _SubmitSm, _Options}, _From,
+             #state{binding=?BIND_RECEIVER} = State) ->
+  {reply, {error, not_allowed}, State}; 
 
 %% ----------------------------------------------------------------------------
 %% @private submit_sm packet sending
 %% ----------------------------------------------------------------------------
-handle_call({submit_sm, SubmitSm, _Options}, From, #state{socket=Socket, seq_num=SeqNum} = State) ->
+handle_call({submit_sm, SubmitSm, _Options}, From, 
+             #state{socket=Socket, seq_num=SeqNum} = State) ->
   NewSeqNum = SeqNum + 1,
   {pdu, Packet} = esmpp_pdu:submit_sm(NewSeqNum, SubmitSm), 
   send(Socket, Packet),
@@ -73,7 +82,8 @@ handle_cast(_Message, State) ->
 %% ----------------------------------------------------------------------------
 %% @private Successfully binded as receiver
 %% ----------------------------------------------------------------------------
-handle_info({tcp, Socket, <<_Len:32, ?BIND_RECEIVER_RESP:32, ?ESME_ROK:32, _Seq:32, _Data/binary>>}, State) ->
+handle_info({tcp, Socket, <<_Len:32, ?BIND_RECEIVER_RESP:32, ?ESME_ROK:32, 
+                            _Seq:32, _Data/binary>>}, State) ->
   {noreply, State#state{
     connected = true,
     binding   = ?BIND_RECEIVER,
@@ -84,7 +94,8 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_RECEIVER_RESP:32, ?ESME_ROK:32, _Seq:
 %% ----------------------------------------------------------------------------
 %% @private Successfully binded as transmitter
 %% ----------------------------------------------------------------------------
-handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, ?ESME_ROK:32, _Seq:32, _Data/binary>>}, State) ->
+handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, ?ESME_ROK:32, 
+                            _Seq:32, _Data/binary>>}, State) ->
   {noreply, State#state{
     connected = true,
     binding   = ?BIND_TRANSMITTER,
@@ -95,7 +106,8 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, ?ESME_ROK:32, _S
 %% ----------------------------------------------------------------------------
 %% @private Successfully binded as tranceiver 
 %% ----------------------------------------------------------------------------
-handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSCEIVER_RESP:32, ?ESME_ROK:32, _Seq:32, _Data/binary>>}, State) ->
+handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSCEIVER_RESP:32, ?ESME_ROK:32,
+                            _Seq:32, _Data/binary>>}, State) ->
   {noreply, State#state{
     connected = true,
     binding   = ?BIND_TRANSCEIVER,
@@ -106,7 +118,9 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSCEIVER_RESP:32, ?ESME_ROK:32, _S
 %% ----------------------------------------------------------------------------
 %% @private Successfully sent a submit_sm request
 %% ----------------------------------------------------------------------------
-handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, ?ESME_ROK:32, _Seq:32, _Data/binary>>}, #state{from=Client} = State) ->
+handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, ?ESME_ROK:32,
+                             _Seq:32, _Data/binary>>}, 
+                             #state{from=Client} = State) ->
   gen_server:reply(Client, ok),
   {noreply, State};
 
