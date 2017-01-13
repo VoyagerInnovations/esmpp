@@ -152,6 +152,18 @@ handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, ?ESME_ROK:32,
   }};
 
 %% ----------------------------------------------------------------------------
+%% @private Unsuccessful submit_sm request
+%% ----------------------------------------------------------------------------
+handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, Status:32,
+                              Seq:32, _Data/binary>>}, 
+                             #state{from_list=Clients} = State) ->
+  Client = maps:get(Seq, Clients, '__undefined__'),
+  gen_server:reply(Client, {error, esmpp_status:to_atom(Status)}),
+  {noreply, State#state{
+    from_list = maps:remove(Seq, Clients)
+  }};
+
+%% ----------------------------------------------------------------------------
 %% @private Connection closed
 %% ----------------------------------------------------------------------------
 handle_info({tcp_closed, _Socket}, State) ->

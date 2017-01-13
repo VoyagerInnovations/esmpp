@@ -18,7 +18,7 @@
 -define(REPLACE_SM_RESP,       16#80000007).
 -define(CANCEL_SM,             16#00000008).
 -define(CANCEL_SM_RESP,        16#80000008).
--define(BIND_TRANSCEIVER,      16#80000009).
+-define(BIND_TRANSCEIVER,      16#00000009).
 -define(BIND_TRANSCEIVER_RESP, 16#80000009).
 -define(OUTBIND,               16#0000000B).
 -define(ENQUIRE_LINK,          16#00000015).
