@@ -1,4 +1,5 @@
-%% @private
+%% @private This is the module that manages states and does actual connection
+%% to the SMPP server. This has the main logic implementation.
 -module(esmpp_worker).
 
 -behaviour(gen_server).
@@ -17,13 +18,19 @@
 -include("commands.hrl").
 -include("command_statuses.hrl").
 
+-record(conn_state, {
+  host              :: iodata(),
+  port              :: integer(),
+  bind_record       :: bind_pdu()
+}).
+
 -record(state, {
   connected = false :: boolean(), 
   seq_num   =  1    :: integer(),
   binding   =  0    :: integer(),
   status    = -1    :: integer(),
-  socket            :: port(),
-  from_list = #{}   :: map()
+  from_list = #{}   :: map(),
+  socket            :: port()
 }).
 
 %% ----------------------------------------------------------------------------
@@ -31,16 +38,16 @@
 %% ----------------------------------------------------------------------------
 
 %% ----------------------------------------------------------------------------
-%% @private submit_sm attempt when not connected
+%% @private Entry point. Note that another record is used here compared
+%% to the rest of the callbacks. This is to minimize footprint as these
+%% fields are only used in the lazy initialization
 %% ----------------------------------------------------------------------------
 init([#{host := Host, port := Port},  BindRecord]) ->
-  {pdu,    Packet} = esmpp_pdu:bind(1, BindRecord),
-  {socket, Socket} = get_socket(Host, Port),
-  send(Socket, Packet),
-  {ok, #state{
-    seq_num   = 1,
-    socket    = Socket
-  }}.
+  {ok, #conn_state{
+    host        = Host,
+    port        = Port,
+    bind_record = BindRecord
+  }, 0}.
 
 %% ----------------------------------------------------------------------------
 %% @private submit_sm attempt when not connected
@@ -79,6 +86,22 @@ handle_call(_Request, _From, State) ->
 %% @private
 handle_cast(_Message, State) ->
   {noreply, State}.
+
+%% ----------------------------------------------------------------------------
+%% @private This does the actual connection. Sleep for 3s, then attempt
+%% to connect. This is a lazy initiation which gives the erlang supervisor
+%% enough time to wait for the connection to resume indefinitely
+%% ----------------------------------------------------------------------------
+handle_info(timeout, #conn_state{host=Host, port=Port, 
+                                 bind_record=BindRecord}) ->
+  timer:sleep(1000),
+  {pdu,    Packet} = esmpp_pdu:bind(1, BindRecord),
+  {socket, Socket} = get_socket(Host, Port),
+  send(Socket, Packet),
+  {noreply, #state{
+    seq_num   = 1,
+    socket    = Socket
+  }};
 
 %% ----------------------------------------------------------------------------
 %% @private Successfully binded as receiver
@@ -130,9 +153,9 @@ handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, ?ESME_ROK:32,
 
 %% ----------------------------------------------------------------------------
 %% @private Connection closed
-%% TODO: Reconnection
 %% ----------------------------------------------------------------------------
 handle_info({tcp_closed, _Socket}, State) ->
+  exit(disconnected),  
   {noreply, State#state{
     connected = false,
     status    = -1,

@@ -117,7 +117,7 @@ start_link(Name, Module, Args) ->
 send_sms(Conn, Sender, Destination, Message) ->
   send_sms(Conn, Sender, Destination, Message, []).
 
-%% @doc Sends a masked short message to the specified MSISDN
+%% @doc Sends a short message to the specified MSISDN
 %%
 %% `Options' is an optional map that may contains the following values:
 -spec send_sms(pid(), iodata(), iodata(), iodata(), Options) -> {message_id, iodata()}
