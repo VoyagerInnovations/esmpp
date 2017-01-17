@@ -119,12 +119,53 @@ send_sms(Conn, Sender, Destination, Message) ->
 
 %% @doc Sends a short message to the specified MSISDN
 %%
-%% `Options' is an optional map that may contains the following values:
+%% `Options' is an optional map that may contain the following keys:
+%%
+%% <dt><b>`service_type'</b></dt>
+%% <dd>Indicates the SMS application service associated with the message</dd>
+%% <dt><b>`protocol_id'</b></dt>
+%% <dd>Network specific protocol identifier</dd>
+%% <dt><b>`priority_flag'</b></dt>
+%% <dd>Designates the priority level of the message.
+%%     See <a href="priority_flag">priority flag values</a></dd>
+%% <dt><b>`delivery_time'</b></dt>
+%% <dd>Either the absolute date and time or relative time from the current 
+%%     SMSC time which the delivery of the message is to be first attempted</dd>
+%% <dt><b>`validity_period'</b></dt>
+%% <dd>SMSC expiration time that indicates when the message should be discarded
+%%     when the message is not delivered</dd>
+%% <dt><b>`reg_delivery'</b></dt>
+%% <dd>Indicates if a delivery receipt will be requested from the SMSC.
+%%     See <a href="reg_delivery">delivery request values</a></dd>
+%% <dt><b>`replace_flag'</b></dt>
+%% <dd>Used to request the SMSC to replace a previously submitted message,
+%%     that is pending delivery. The SMSC will replace the existing message
+%%     if the source address, destination address, and service type match
+%%     the same fields in the new message</dd>
+%% <hr />
+%% <div id="priority_flag">Priority Flag values:</div>
+%% <dd> 
+%%   <p>`0 - Level 0 (lowest) priority'</p>
+%%   <p>`1 - Level 1 priority'</p>
+%%   <p>`2 - Level 2 priority'</p>
+%%   <p>`3 - Level 3 (highest) priority'</p>
+%% </dd>
+%% <div id="reg_delivery">Delivery Request values:</div>
+%% <dd> 
+%%   <p>`0 - No delivery receipt requested'</p>
+%%   <p>`1 - Delivery receipt requested (success or failure)'</p>
+%%   <p>`2 - Delivery receipt requested (failure only)'</p>
+%% </dd>
 -spec send_sms(pid(), iodata(), iodata(), iodata(), Options) -> {message_id, iodata()}
-  when Options :: #{}.
+  when Options :: #{ service_type  => iodata()  ,
+                     protocol_id   => integer() ,
+                     priority_flag => integer() ,
+                     delivery_time => iodata()  ,
+                     validity      => iodata()  ,
+                     reg_delivery  => integer() ,
+                     replace_flag  => integer() }.
 send_sms(Conn, Sender, Destination, TmpMessage, Options) ->
   ServiceType  = maps:get(service_type,  Options, <<0>>),
-  EsmClass     = maps:get(esm_class,     Options, 0),
   ProtocolId   = maps:get(protocol_id,   Options, 0),
   PriorityFlag = maps:get(priority_flag, Options, 0),
   DeliveryTime = maps:get(delivery_time, Options, <<0>>),
@@ -146,7 +187,6 @@ send_sms(Conn, Sender, Destination, TmpMessage, Options) ->
     dst_addr_npi  = DstAddrNpi,
     dst_addr      = Destination,
     data_coding   = DataCoding,
-    esm_class     = EsmClass,
     protocol_id   = ProtocolId,
     priority_flag = PriorityFlag,
     delivery_time = DeliveryTime,
