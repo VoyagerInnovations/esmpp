@@ -112,7 +112,7 @@ start_link('__undefined__', Module, Args) ->
 start_link(Name, Module, Args) ->
   gen_server:start_link(Name, Module, Args, []).
 
-%% @see send_sms/4
+%% @see send_sms/5
 -spec send_sms(pid(), iodata(), iodata(), iodata()) -> {message_id, iodata()}.
 send_sms(Conn, Sender, Destination, Message) ->
   send_sms(Conn, Sender, Destination, Message, []).
@@ -127,7 +127,7 @@ send_sms(Conn, Sender, Destination, Message) ->
 %% <dd>Network specific protocol identifier</dd>
 %% <dt><b>`priority_flag'</b></dt>
 %% <dd>Designates the priority level of the message.
-%%     See <a href="priority_flag">priority flag values</a></dd>
+%%     See <a href="#priority_flag">priority flag values</a></dd>
 %% <dt><b>`delivery_time'</b></dt>
 %% <dd>Either the absolute date and time or relative time from the current 
 %%     SMSC time which the delivery of the message is to be first attempted</dd>
@@ -136,7 +136,7 @@ send_sms(Conn, Sender, Destination, Message) ->
 %%     when the message is not delivered</dd>
 %% <dt><b>`reg_delivery'</b></dt>
 %% <dd>Indicates if a delivery receipt will be requested from the SMSC.
-%%     See <a href="reg_delivery">delivery request values</a></dd>
+%%     See <a href="#reg_delivery">delivery request values</a></dd>
 %% <dt><b>`replace_flag'</b></dt>
 %% <dd>Used to request the SMSC to replace a previously submitted message,
 %%     that is pending delivery. The SMSC will replace the existing message
