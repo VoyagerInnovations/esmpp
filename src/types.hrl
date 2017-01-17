@@ -29,7 +29,8 @@
   data_coding         = 0     :: integer(),
   msg_id              = 0     :: integer(),
   sm_length           = 0     :: integer(),
-  short_message       = <<>>  :: iodata()
+  short_message       = <<>>  :: iodata(),
+  optional_params     = #{}   :: map()
 }).
 
 -type(bind_pdu()      :: #bind_pdu{}).

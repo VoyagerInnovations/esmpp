@@ -12,7 +12,8 @@
 -export([
   start_link/1,
   send_sms/4,
-  send_sms/5
+  send_sms/5,
+  send_sms/6
 ]).
 
 -include("types.hrl").
@@ -115,7 +116,12 @@ start_link(Name, Module, Args) ->
 %% @see send_sms/5
 -spec send_sms(pid(), iodata(), iodata(), iodata()) -> {message_id, iodata()}.
 send_sms(Conn, Sender, Destination, Message) ->
-  send_sms(Conn, Sender, Destination, Message, []).
+  send_sms(Conn, Sender, Destination, Message, #{}).
+
+%% @see send_sms/6
+-spec send_sms(pid(), iodata(), iodata(), iodata(), map()) -> {message_id, iodata()}.
+send_sms(Conn, Sender, Destination, Message, Options) ->
+  send_sms(Conn, Sender, Destination, Message, Options, #{}).
 
 %% @doc Sends a short message to the specified MSISDN
 %%
@@ -156,15 +162,43 @@ send_sms(Conn, Sender, Destination, Message) ->
 %%   <p>`1 - Delivery receipt requested (success or failure)'</p>
 %%   <p>`2 - Delivery receipt requested (failure only)'</p>
 %% </dd>
--spec send_sms(pid(), iodata(), iodata(), iodata(), Options) -> {message_id, iodata()}
-  when Options :: #{ service_type  => iodata()  ,
-                     protocol_id   => integer() ,
-                     priority_flag => integer() ,
-                     delivery_time => iodata()  ,
-                     validity      => iodata()  ,
-                     reg_delivery  => integer() ,
-                     replace_flag  => integer() }.
-send_sms(Conn, Sender, Destination, TmpMessage, Options) ->
+-spec send_sms(pid(), iodata(), iodata(), iodata(), Options, OptionalParams) -> {message_id, iodata()}
+  when Options        :: #{ service_type           => iodata()  ,
+                            protocol_id            => integer() ,
+                            priority_flag          => integer() ,
+                            delivery_time          => iodata()  ,
+                            validity               => iodata()  ,
+                            reg_delivery           => integer() ,
+                            replace_flag           => integer() },
+       OptionalParams :: #{ user_message_reference => integer() ,
+                            source_port            => integer() , 
+                            source_addr_subunit    => integer() ,
+                            destination_port       => integer() ,
+                            dest_addr_subunit      => integer() ,
+                            sar_msg_ref_num        => integer() ,
+                            sar_total_segments     => integer() ,
+                            sar_segment_seqnum     => integer() ,
+                            more_messages_to_send  => integer() ,
+                            payload_type           => integer() ,
+                            message_payload        => iodata()  ,
+                            privacy_indicator      => integer() ,
+                            callback_num           => iodata()  ,
+                            callback_num_pres_ind  => integer() ,
+                            callback_num_atag      => iodata()  ,
+                            source_subaddress      => iodata()  ,
+                            dest_subaddress        => iodata()  ,
+                            user_response_code     => integer() ,
+                            display_time           => integer() ,
+                            sms_signal             => integer() ,
+                            ms_validity            => integer() ,
+                            ms_msg_wait_facilities => integer() ,
+                            number_of_messages     => integer() ,
+                            alert_on_msg_delivery  => integer() ,
+                            language_indicator     => integer() ,
+                            its_reply_type         => integer() ,
+                            its_session_info       => integer() ,
+                            ussd_service_op        => integer() }.
+send_sms(Conn, Sender, Destination, TmpMessage, Options, OptionalParams) ->
   ServiceType  = maps:get(service_type,  Options, <<0>>),
   ProtocolId   = maps:get(protocol_id,   Options, 0),
   PriorityFlag = maps:get(priority_flag, Options, 0),
@@ -179,22 +213,23 @@ send_sms(Conn, Sender, Destination, TmpMessage, Options) ->
   DstAddrNpi   = get_npi(esmpp_format:ensure_binary(Destination)),
   Message      = encode(esmpp_format:ensure_binary(TmpMessage), DataCoding),
   SubmitSm = #submit_sm_pdu{
-    service_type  = ServiceType,
-    src_addr_ton  = SrcAddrTon,
-    src_addr_npi  = SrcAddrNpi,
-    src_addr      = Sender,
-    dst_addr_ton  = DstAddrTon,
-    dst_addr_npi  = DstAddrNpi,
-    dst_addr      = Destination,
-    data_coding   = DataCoding,
-    protocol_id   = ProtocolId,
-    priority_flag = PriorityFlag,
-    delivery_time = DeliveryTime,
-    validity      = Validity,
-    reg_delivery  = RegDelivery,
-    replace_flag  = ReplaceFlag,
-    sm_length     = size(Message),
-    short_message = Message
+    service_type    = ServiceType,
+    src_addr_ton    = SrcAddrTon,
+    src_addr_npi    = SrcAddrNpi,
+    src_addr        = Sender,
+    dst_addr_ton    = DstAddrTon,
+    dst_addr_npi    = DstAddrNpi,
+    dst_addr        = Destination,
+    data_coding     = DataCoding,
+    protocol_id     = ProtocolId,
+    priority_flag   = PriorityFlag,
+    delivery_time   = DeliveryTime,
+    validity        = Validity,
+    reg_delivery    = RegDelivery,
+    replace_flag    = ReplaceFlag,
+    sm_length       = size(Message),
+    short_message   = Message,
+    optional_params = OptionalParams
   },
   gen_server:call(Conn, {submit_sm, SubmitSm, Options}).
 
