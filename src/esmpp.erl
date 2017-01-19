@@ -159,13 +159,14 @@ send_sms(Conn, Sender, Destination, Message, Options) ->
 %% <dd> Indicates the application port number associated with the source 
 %%      address of the message. Should be present for WAP applications</dd>
 %% <dt><b>`source_addr_subunit'</b></dt>
-%% <dd>The subcomponent in the destination device which created the user data</dd>
+%% <dd>The subcomponent in the destination device which created the user data.
+%%     See <a href="#subunit">subunit values</a></dd>
 %% <dt><b>`destination_port'</b></dt>
 %% <dd> Indicates the application port number associated with the destination 
 %%      address of the message. Should be present for WAP applications</dd>
-%% <dt><b>`source_addr_subunit'</b></dt>
+%% <dt><b>`dest_addr_subunit'</b></dt>
 %% <dd>The subcomponent in the destination device for which the user data
-%%     is intended</dd>
+%%     is intended. See <a href="#subunit">subunit values</a></dd>
 %% <dt><b>`sar_msg_ref_num'</b></dt>
 %% <dd>Reference number of a particular concatenated message</dd>
 %% <dt><b>`sar_total_segments'</b></dt>
@@ -235,6 +236,14 @@ send_sms(Conn, Sender, Destination, Message, Options) ->
 %%   <p>`0 - No delivery receipt requested'</p>
 %%   <p>`1 - Delivery receipt requested (success or failure)'</p>
 %%   <p>`2 - Delivery receipt requested (failure only)'</p>
+%% </dd>
+%% <div id="subunit">Subunit values:</div>
+%% <dd> 
+%%   <p>`0 - Unknown (Default)'</p>
+%%   <p>`1 - MS Display'</p>
+%%   <p>`2 - Mobile Equipment'</p>
+%%   <p>`3 - Smart Card 1'</p>
+%%   <p>`4 - External Unit 1'</p>
 %% </dd>
 %% <div id="payload_type">Payload Type values:</div>
 %% <dd> 
