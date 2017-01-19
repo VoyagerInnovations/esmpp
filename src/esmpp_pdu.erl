@@ -3,9 +3,17 @@
 %% This module constructs and parses SMPP PDUs to and from octet formats
 -module(esmpp_pdu).
 
+%% Main exports
 -export([
   bind/2,
   submit_sm/2
+]).
+
+%% Internally exposed
+-export([
+  pad2/1,
+  pad4/1,
+  iodata_to_cstring/2
 ]).
 
 -include("constants.hrl").
@@ -33,6 +41,7 @@ bind(SeqNumInt, Bind) ->
   PDU        = <<Length/binary, TmpPDU/binary>>,
   {pdu, PDU}.
 
+%% @doc Encode a submit_sm PDU from a sequence number and a submit_sm record
 -spec submit_sm(integer(), submit_sm_pdu()) -> {pdu, binary()}.
 submit_sm(SeqNumInt, SubmitSm) ->
   Status       = pad4(binary:encode_unsigned(?NULL)),
@@ -68,10 +77,11 @@ submit_sm(SeqNumInt, SubmitSm) ->
   {pdu, PDU}.
 
 %% ----------------------------------------------------------------------------
-%% internal
+%% internal - but exposed nonetheless
 %% ----------------------------------------------------------------------------
 
-%% @private
+%% @private Used to convert erlang string to a C string
+%% terminated by a NULL character
 iodata_to_cstring(<<>>, _MaxLength)  -> <<0>>;
 iodata_to_cstring(<<0>>, _MaxLength) -> <<0>>;
 iodata_to_cstring(Data, MaxLength) when size(Data) >= MaxLength ->
@@ -83,7 +93,12 @@ iodata_to_cstring(Data, _MaxLength) ->
   DataBin = esmpp_format:ensure_binary(Data),
   <<DataBin/binary, 0>>.
 
-%% @private
+%% @private Pads erlang binary with max 2 octets
+pad2(Bin)        -> pad2(Bin, big).
+pad2(Bin, big)   -> <<0:((2 - (size(Bin) rem 2)) * 8), Bin/binary>>;
+pad2(Bin, small) -> <<Bin/binary, 0:((2 - (size(Bin) rem 2)) * 8)>>.
+
+%% @private Pads erlang binary with max 4 octets
 pad4(Bin)        -> pad4(Bin, big).
 pad4(Bin, big)   -> <<0:((4 - (size(Bin) rem 4)) * 8), Bin/binary>>;
 pad4(Bin, small) -> <<Bin/binary, 0:((4 - (size(Bin) rem 4)) * 8)>>.

@@ -2,8 +2,10 @@
 -module(esmpp_tags).
 
 -export([
-  get_value/1
+  pack/2
 ]).
+
+-include("constants.hrl").
 
 %% @private
 get_value(dest_addr_subunit)           -> 16#0005;
@@ -49,3 +51,91 @@ get_value(ms_validity)                 -> 16#1204;
 get_value(alert_on_message_delivery)   -> 16#130C;
 get_value(its_reply_type)              -> 16#1380;
 get_value(its_session_info)            -> 16#1383.
+
+%% @private
+pack(dest_addr_subunit           = Tag, Value) -> pack_int1(Tag, Value);
+pack(source_addr_subunit         = Tag, Value) -> pack_int1(Tag, Value);
+pack(dest_network_type           = Tag, Value) -> pack_int1(Tag, Value);
+pack(source_network_type         = Tag, Value) -> pack_int1(Tag, Value);
+pack(dest_bearer_type            = Tag, Value) -> pack_int1(Tag, Value);
+pack(source_bearer_type          = Tag, Value) -> pack_int1(Tag, Value);
+pack(source_telematics_id        = Tag, Value) -> pack_int1(Tag, Value);
+pack(payload_type                = Tag, Value) -> pack_int1(Tag, Value);
+pack(ms_msg_wait_facilities      = Tag, Value) -> pack_int1(Tag, Value);
+pack(privacy_indicator           = Tag, Value) -> pack_int1(Tag, Value);
+pack(user_response_code          = Tag, Value) -> pack_int1(Tag, Value);
+pack(language_indicator          = Tag, Value) -> pack_int1(Tag, Value);
+pack(sar_total_segments          = Tag, Value) -> pack_int1(Tag, Value);
+pack(sar_segment_seqnum          = Tag, Value) -> pack_int1(Tag, Value);
+pack(sc_interface_version        = Tag, Value) -> pack_int1(Tag, Value);
+pack(display_time                = Tag, Value) -> pack_int1(Tag, Value);
+pack(ms_validity                 = Tag, Value) -> pack_int1(Tag, Value);
+pack(dpf_result                  = Tag, Value) -> pack_int1(Tag, Value);
+pack(set_dpf                     = Tag, Value) -> pack_int1(Tag, Value);
+pack(ms_availability_status      = Tag, Value) -> pack_int1(Tag, Value);
+pack(delivery_failure_reason     = Tag, Value) -> pack_int1(Tag, Value);
+pack(more_messages_to_send       = Tag, Value) -> pack_int1(Tag, Value);
+pack(message_state               = Tag, Value) -> pack_int1(Tag, Value);
+pack(callback_num_pres_ind       = Tag, Value) -> pack_int1(Tag, Value);
+pack(number_of_messages          = Tag, Value) -> pack_int1(Tag, Value);
+pack(its_reply_type              = Tag, Value) -> pack_int1(Tag, Value);
+pack(user_message_reference      = Tag, Value) -> pack_int2(Tag, Value);
+pack(dest_telematics_id          = Tag, Value) -> pack_int2(Tag, Value);
+pack(source_port                 = Tag, Value) -> pack_int2(Tag, Value);
+pack(destination_port            = Tag, Value) -> pack_int2(Tag, Value);
+pack(sar_msg_ref_num             = Tag, Value) -> pack_int2(Tag, Value);
+pack(sms_signal                  = Tag, Value) -> pack_int2(Tag, Value);
+pack(qos_time_to_live            = Tag, Value) -> pack_int4(Tag, Value);
+pack(source_subaddress           = Tag, Value) -> pack_string(Tag, Value);
+pack(dest_subaddress             = Tag, Value) -> pack_string(Tag, Value);
+pack(network_error_code          = Tag, Value) -> pack_string(Tag, Value);
+pack(message_payload             = Tag, Value) -> pack_string(Tag, Value);
+pack(callback_num                = Tag, Value) -> pack_string(Tag, Value);
+pack(callback_num_atag           = Tag, Value) -> pack_string(Tag, Value);
+pack(its_session_info            = Tag, Value) -> pack_string(Tag, Value);
+pack(ussd_service_op             = Tag, Value) -> pack_string(Tag, Value);
+pack(receipted_message_id        = Tag, Value) -> pack_cstring(Tag, Value, 65);
+pack(additional_status_info_text = Tag, Value) -> pack_cstring(Tag, Value, 256);
+pack(alert_on_message_delivery   = Tag, _Value) -> pack_null(Tag).
+
+
+%% @private
+pack_null(Tag) ->
+  Tag    = esmpp_pdu:pad2(get_value(Tag)),
+  Length = esmpp_pdu:pad2(?NULL),
+  <<Tag/binary, Length/binary>>.
+
+%% @private
+pack_int1(Tag, Value) ->
+  Tag    = esmpp_pdu:pad2(get_value(Tag)),
+  Length = esmpp_pdu:pad2(size(Value)),
+  <<Tag/binary, Length/binary, Value/binary>>.
+
+%% @private
+pack_int2(Tag, TmpValue) ->
+  Tag    = esmpp_pdu:pad2(get_value(Tag)),
+  Value  = esmpp_pdu:pad2(TmpValue),
+  Length = esmpp_pdu:pad2(size(Value)),
+  <<Tag/binary, Length/binary, Value/binary>>.
+
+%% @private
+pack_int4(Tag, TmpValue) ->
+  Tag    = esmpp_pdu:pad2(get_value(Tag)),
+  Value  = esmpp_pdu:pad4(TmpValue),
+  Length = esmpp_pdu:pad2(size(Value)),
+  <<Tag/binary, Length/binary, Value/binary>>.
+
+%% @private
+pack_string(Tag, TmpValue) ->
+  Tag    = esmpp_pdu:pad2(get_value(Tag)),
+  Value  = esmpp_format:ensure_binary(TmpValue),
+  Length = esmpp_pdu:pad2(size(Value)),
+  <<Tag/binary, Length/binary, Value/binary>>.
+
+%% @private
+pack_cstring(Tag, TmpValue, MaxLength) ->
+  Tag    = esmpp_pdu:pad2(get_value(Tag)),
+  BinVal = esmpp_format:ensure_binary(TmpValue),
+  Value  = esmpp_pdu:iodata_to_cstring(BinVal, MaxLength),
+  Length = esmpp_pdu:pad2(size(Value)),
+  <<Tag/binary, Length/binary, Value/binary>>.
