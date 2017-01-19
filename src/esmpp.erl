@@ -148,6 +148,80 @@ send_sms(Conn, Sender, Destination, Message, Options) ->
 %%     that is pending delivery. The SMSC will replace the existing message
 %%     if the source address, destination address, and service type match
 %%     the same fields in the new message</dd>
+%%
+%% `OptionalParameters' is another optional map that goes to the <em>optional
+%% parameters</em> part of the PDU. For this particular operation, the following
+%% keys can be used:
+%%
+%% <dt><b>`user_message_reference'</b></dt>
+%% <dd>Reference number assigned by the SMPP clientto the message</dd>
+%% <dt><b>`source_port'</b></dt>
+%% <dd> Indicates the application port number associated with the source 
+%%      address of the message. Should be present for WAP applications</dd>
+%% <dt><b>`source_addr_subunit'</b></dt>
+%% <dd>The subcomponent in the destination device which created the user data</dd>
+%% <dt><b>`destination_port'</b></dt>
+%% <dd> Indicates the application port number associated with the destination 
+%%      address of the message. Should be present for WAP applications</dd>
+%% <dt><b>`source_addr_subunit'</b></dt>
+%% <dd>The subcomponent in the destination device for which the user data
+%%     is intended</dd>
+%% <dt><b>`sar_msg_ref_num'</b></dt>
+%% <dd>Reference number of a particular concatenated message</dd>
+%% <dt><b>`sar_total_segments'</b></dt>
+%% <dd>Total number of messages within the concatenated message</dd>
+%% <dt><b>`sar_segment_seqnum'</b></dt>
+%% <dd>Sequence number of a particular message fragment within the concatenated
+%%     message</dd>
+%% <dt><b>`more_messages_to_send'</b></dt>
+%% <dd>Indicates that there are more messages to follow</dd>
+%% <dt><b>`payload_type'</b></dt>
+%% <dd>Defines the type of payload. See <a href="#payload_type">payload
+%%     types</a></dd>
+%% <dt><b>`message_payload'</b></dt>
+%% <dd>Extended short message user data</dd>
+%% <dt><b>`privacy_indicator'</b></dt>
+%% <dd>Indicates the level of privacy associated with the message.
+%%     See <a href="#privacy_indicator">privacy indicator values</a></dd>
+%% <dt><b>`callback_num'</b></dt>
+%% <dd>Callback number associated with the message</dd>
+%% <dt><b>`callback_num_pres_ind'</b></dt>
+%% <dd>Defines the callback number presentation and screening</dd>
+%% <dt><b>`callback_num_atag'</b></dt>
+%% <dd>Associates a displayable alphanumeric tag with the callback number</dd>
+%% <dt><b>`source_subaddress'</b></dt>
+%% <dd>Subaddress of the message originator</dd>
+%% <dt><b>`dest_subaddress'</b></dt>
+%% <dd>Subaddress of the message destination</dd>
+%% <dt><b>`user_response_code'</b></dt>
+%% <dd>A user response code. <em>Implementation specific</em></dd>
+%% <dt><b>`display_time'</b></dt>
+%% <dd> Provides the receiving MS with a display time associated with the
+%%      message</dd>
+%% <dt><b>`sms_signal'</b></dt>
+%% <dd>Indicates the alerting mechanism when the message is received by an MS</dd>
+%% <dt><b>`ms_validity'</b></dt>
+%% <dd>Indicates the validity information for the message to the receiving MS.
+%%     See <a href="#ms_validity">MS validity values</a></dd>
+%% <dt><b>`ms_msg_wait_facilities'</b></dt>
+%% <dd>Controls the indication and specifies the message type at the MS</dd>
+%% <dt><b>`number_of_messages'</b></dt>
+%% <dd>Number of messages stored in a mail box</dd>
+%% <dt><b>`alert_on_msg_delivery'</b></dt>
+%% <dd>Requests an MS alert signal be invoked on message delivery</dd>
+%% <dt><b>`language_indicator'</b></dt>
+%% <dd>Indicates the language of an alphanumeric text. See 
+%%     <a href="#language_indicator">language indicator values</a></dd>
+%% <dt><b>`its_reply_type'</b></dt>
+%% <dd>The MS user's reply method to a SMS delivery message received from
+%%     the network. See <a href="#its_reply_type">reply type values</a></dd>
+%% <dt><b>`its_session_info'</b></dt>
+%% <dd>Session control information for Interactive Teleservice</dd>
+%% <dt><b>`ussd_service_op'</b></dt>
+%% <dd>Identifies the required USSD Service type when interfacing to
+%%     a USSD system. See <a href="#ussd_service_op">USSD service operation
+%%     values</a></dd>
+%% 
 %% <hr />
 %% <div id="priority_flag">Priority Flag values:</div>
 %% <dd> 
@@ -161,6 +235,57 @@ send_sms(Conn, Sender, Destination, Message, Options) ->
 %%   <p>`0 - No delivery receipt requested'</p>
 %%   <p>`1 - Delivery receipt requested (success or failure)'</p>
 %%   <p>`2 - Delivery receipt requested (failure only)'</p>
+%% </dd>
+%% <div id="payload_type">Payload Type values:</div>
+%% <dd> 
+%%   <p>`0 - Default'</p>
+%%   <p>`1 - WCMP formatted'</p>
+%% </dd>
+%% <div id="privacy_indicator">Privacy Indicator values:</div>
+%% <dd> 
+%%   <p>`0 - Privacy level 0 (Not Restricted - Default)'</p>
+%%   <p>`1 - Privacy level 1 (Restricted)'</p>
+%%   <p>`2 - Privacy level 2 (Confidential)'</p>
+%%   <p>`3 - Privacy level 3 (Secret)'</p>
+%% </dd>
+%% <div id="ms_validity">MS Validity values:</div>
+%% <dd> 
+%%   <p>`0 - Store Indefinitely (Default)'</p>
+%%   <p>`1 - Power Down'</p>
+%%   <p>`2 - SID based registration area'</p>
+%%   <p>`3 - Display Only'</p>
+%% </dd>
+%% <div id="language_indicator">Language Indicator values:</div>
+%% <dd> 
+%%   <p>`0 - Unspecified (Default)'</p>
+%%   <p>`1 - English'</p>
+%%   <p>`2 - French'</p>
+%%   <p>`3 - Spanish'</p>
+%%   <p>`4 - German'</p>
+%%   <p>`5 - Portuguese'</p>
+%% </dd>
+%% <div id="its_reply_type">Reply Type values:</div>
+%% <dd> 
+%%   <p>`0 - Digit'</p>
+%%   <p>`1 - Number'</p>
+%%   <p>`2 - Telephone No.'</p>
+%%   <p>`3 - Password'</p>
+%%   <p>`4 - Character Line'</p>
+%%   <p>`5 - Menu'</p>
+%%   <p>`6 - Date'</p>
+%%   <p>`7 - Time'</p>
+%%   <p>`8 - Continue'</p>
+%% </dd>
+%% <div id="ussd_service_op">USSD Service Operation values:</div>
+%% <dd> 
+%%   <p>`0  - PSSD indication'</p>
+%%   <p>`1  - PSSR indication'</p>
+%%   <p>`2  - USSR request'</p>
+%%   <p>`3  - USSN request'</p>
+%%   <p>`16 - PSSD response'</p>
+%%   <p>`17 - PSSR response'</p>
+%%   <p>`18 - USSR confirm'</p>
+%%   <p>`19 - USSN confirm'</p>
 %% </dd>
 -spec send_sms(pid(), iodata(), iodata(), iodata(), Options, OptionalParams) -> {message_id, iodata()}
   when Options        :: #{ service_type           => iodata()  ,

@@ -51,7 +51,7 @@ returned from the function.</p>
  
   <p><code>Options</code> is an optional map that may contain the following keys:</p>
  
-  <dt><b><code>service_type</code></b></dt>
+  <p><dt><b><code>service_type</code></b></dt>
   <dd>Indicates the SMS application service associated with the message</dd>
   <dt><b><code>protocol_id</code></b></dt>
   <dd>Network specific protocol identifier</dd>
@@ -71,7 +71,81 @@ returned from the function.</p>
   <dd>Used to request the SMSC to replace a previously submitted message,
       that is pending delivery. The SMSC will replace the existing message
       if the source address, destination address, and service type match
-      the same fields in the new message</dd>
+      the same fields in the new message</dd></p>
+ 
+  <p><code>OptionalParameters</code> is another optional map that goes to the <em>optional
+  parameters</em> part of the PDU. For this particular operation, the following  
+keys can be used:</p>
+ 
+  <p><dt><b><code>user_message_reference</code></b></dt>
+  <dd>Reference number assigned by the SMPP clientto the message</dd>
+  <dt><b><code>source_port</code></b></dt>
+  <dd> Indicates the application port number associated with the source
+       address of the message. Should be present for WAP applications</dd>
+  <dt><b><code>source_addr_subunit</code></b></dt>
+  <dd>The subcomponent in the destination device which created the user data</dd>
+  <dt><b><code>destination_port</code></b></dt>
+  <dd> Indicates the application port number associated with the destination
+       address of the message. Should be present for WAP applications</dd>
+  <dt><b><code>source_addr_subunit</code></b></dt>
+  <dd>The subcomponent in the destination device for which the user data
+      is intended</dd>
+  <dt><b><code>sar_msg_ref_num</code></b></dt>
+  <dd>Reference number of a particular concatenated message</dd>
+  <dt><b><code>sar_total_segments</code></b></dt>
+  <dd>Total number of messages within the concatenated message</dd>
+  <dt><b><code>sar_segment_seqnum</code></b></dt>
+  <dd>Sequence number of a particular message fragment within the concatenated
+      message</dd>
+  <dt><b><code>more_messages_to_send</code></b></dt>
+  <dd>Indicates that there are more messages to follow</dd>
+  <dt><b><code>payload_type</code></b></dt>
+  <dd>Defines the type of payload. See <a href="#payload_type">payload
+      types</a></dd>
+  <dt><b><code>message_payload</code></b></dt>
+  <dd>Extended short message user data</dd>
+  <dt><b><code>privacy_indicator</code></b></dt>
+  <dd>Indicates the level of privacy associated with the message.
+      See <a href="#privacy_indicator">privacy indicator values</a></dd>
+  <dt><b><code>callback_num</code></b></dt>
+  <dd>Callback number associated with the message</dd>
+  <dt><b><code>callback_num_pres_ind</code></b></dt>
+  <dd>Defines the callback number presentation and screening</dd>
+  <dt><b><code>callback_num_atag</code></b></dt>
+  <dd>Associates a displayable alphanumeric tag with the callback number</dd>
+  <dt><b><code>source_subaddress</code></b></dt>
+  <dd>Subaddress of the message originator</dd>
+  <dt><b><code>dest_subaddress</code></b></dt>
+  <dd>Subaddress of the message destination</dd>
+  <dt><b><code>user_response_code</code></b></dt>
+  <dd>A user response code. <em>Implementation specific</em></dd>
+  <dt><b><code>display_time</code></b></dt>
+  <dd> Provides the receiving MS with a display time associated with the
+       message</dd>
+  <dt><b><code>sms_signal</code></b></dt>
+  <dd>Indicates the alerting mechanism when the message is received by an MS</dd>
+  <dt><b><code>ms_validity</code></b></dt>
+  <dd>Indicates the validity information for the message to the receiving MS.
+      See <a href="#ms_validity">MS validity values</a></dd>
+  <dt><b><code>ms_msg_wait_facilities</code></b></dt>
+  <dd>Controls the indication and specifies the message type at the MS</dd>
+  <dt><b><code>number_of_messages</code></b></dt>
+  <dd>Number of messages stored in a mail box</dd>
+  <dt><b><code>alert_on_msg_delivery</code></b></dt>
+  <dd>Requests an MS alert signal be invoked on message delivery</dd>
+  <dt><b><code>language_indicator</code></b></dt>
+  <dd>Indicates the language of an alphanumeric text. See
+      <a href="#language_indicator">language indicator values</a></dd>
+  <dt><b><code>its_reply_type</code></b></dt>
+  <dd>The MS user's reply method to a SMS delivery message received from
+      the network. See <a href="#its_reply_type">reply type values</a></dd>
+  <dt><b><code>its_session_info</code></b></dt>
+  <dd>Session control information for Interactive Teleservice</dd>
+  <dt><b><code>ussd_service_op</code></b></dt>
+  <dd>Identifies the required USSD Service type when interfacing to
+      a USSD system. See <a href="#ussd_service_op">USSD service operation
+      values</a></dd></p>
+ 
   <hr>
   <div id="priority_flag">Priority Flag values:</div>
   <dd>
@@ -85,6 +159,57 @@ returned from the function.</p>
     <p><code>0 - No delivery receipt requested</code></p>
     <p><code>1 - Delivery receipt requested (success or failure)</code></p>
     <p><code>2 - Delivery receipt requested (failure only)</code></p>
+  </dd>
+  <div id="payload_type">Payload Type values:</div>
+  <dd>
+    <p><code>0 - Default</code></p>
+    <p><code>1 - WCMP formatted</code></p>
+  </dd>
+  <div id="privacy_indicator">Privacy Indicator values:</div>
+  <dd>
+    <p><code>0 - Privacy level 0 (Not Restricted - Default)</code></p>
+    <p><code>1 - Privacy level 1 (Restricted)</code></p>
+    <p><code>2 - Privacy level 2 (Confidential)</code></p>
+    <p><code>3 - Privacy level 3 (Secret)</code></p>
+  </dd>
+  <div id="ms_validity">MS Validity values:</div>
+  <dd>
+    <p><code>0 - Store Indefinitely (Default)</code></p>
+    <p><code>1 - Power Down</code></p>
+    <p><code>2 - SID based registration area</code></p>
+    <p><code>3 - Display Only</code></p>
+  </dd>
+  <div id="language_indicator">Language Indicator values:</div>
+  <dd>
+    <p><code>0 - Unspecified (Default)</code></p>
+    <p><code>1 - English</code></p>
+    <p><code>2 - French</code></p>
+    <p><code>3 - Spanish</code></p>
+    <p><code>4 - German</code></p>
+    <p><code>5 - Portuguese</code></p>
+  </dd>
+  <div id="its_reply_type">Reply Type values:</div>
+  <dd>
+    <p><code>0 - Digit</code></p>
+    <p><code>1 - Number</code></p>
+    <p><code>2 - Telephone No.</code></p>
+    <p><code>3 - Password</code></p>
+    <p><code>4 - Character Line</code></p>
+    <p><code>5 - Menu</code></p>
+    <p><code>6 - Date</code></p>
+    <p><code>7 - Time</code></p>
+    <p><code>8 - Continue</code></p>
+  </dd>
+  <div id="ussd_service_op">USSD Service Operation values:</div>
+  <dd>
+    <p><code>0  - PSSD indication</code></p>
+    <p><code>1  - PSSR indication</code></p>
+    <p><code>2  - USSR request</code></p>
+    <p><code>3  - USSN request</code></p>
+    <p><code>16 - PSSD response</code></p>
+    <p><code>17 - PSSR response</code></p>
+    <p><code>18 - USSR confirm</code></p>
+    <p><code>19 - USSN confirm</code></p>
   </dd></p>
 
 <h3 class="function"><a name="start_link-1">start_link/1</a></h3>
@@ -146,6 +271,6 @@ returned from the function.</p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
-<p><i>Generated by EDoc, Jan 17 2017, 18:33:39.</i></p>
+<p><i>Generated by EDoc, Jan 19 2017, 18:03:48.</i></p>
 </body>
 </html>
