@@ -152,10 +152,10 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSCEIVER_RESP:32, ?ESME_ROK:32,
 %% @private Successfully sent a submit_sm request
 %% ----------------------------------------------------------------------------
 handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, ?ESME_ROK:32,
-                              Seq:32, _Data/binary>>}, 
+                              Seq:32, MessageId/binary>>}, 
                              #state{from_list=Clients} = State) ->
   Client = maps:get(Seq, Clients, '__undefined__'),
-  gen_server:reply(Client, ok),
+  gen_server:reply(Client, {ok, strip_null(MessageId)}),
   {noreply, State#state{
     from_list = maps:remove(Seq, Clients)
   }};
@@ -214,3 +214,9 @@ send(Socket, Packet) ->
 %% @private
 increment(Seq) ->
   Seq + 1.
+
+%% @private
+strip_null(Bin) ->
+  Limit = size(Bin) - 1,
+  <<BinPart:Limit/binary, _Null>> = Bin,
+  BinPart.
