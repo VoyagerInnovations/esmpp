@@ -6,6 +6,7 @@
 %% Main exports
 -export([
   bind/2,
+  enquire_link/1,
   submit_sm/2
 ]).
 
@@ -37,6 +38,17 @@ bind(SeqNumInt, Bind) ->
                  SystemId/binary, Password/binary, SystemType/binary,
                  Version/binary, AddrTon/binary, AddrNpi/binary,
                  AddrRange/binary>>,
+  Length     = pad4(binary:encode_unsigned(size(TmpPDU) + 4)),
+  PDU        = <<Length/binary, TmpPDU/binary>>,
+  {pdu, PDU}.
+
+%% @doc Encode an enquire_link PDU from a sequence number
+-spec enquire_link(integer()) -> {pdu, binary()}.
+enquire_link(SeqNumInt) ->
+  Status     = pad4(binary:encode_unsigned(?NULL)),
+  SeqNum     = pad4(binary:encode_unsigned(SeqNumInt)),
+  Command    = pad4(binary:encode_unsigned(?ENQUIRE_LINK)),
+  TmpPDU     = <<Command/binary, Status/binary, SeqNum/binary>>,
   Length     = pad4(binary:encode_unsigned(size(TmpPDU) + 4)),
   PDU        = <<Length/binary, TmpPDU/binary>>,
   {pdu, PDU}.

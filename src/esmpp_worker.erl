@@ -30,7 +30,8 @@
   binding   =  0    :: integer(),
   status    = -1    :: integer(),
   from_list = #{}   :: map(),
-  socket            :: port()
+  socket            :: port(),
+  tref              :: {integer(), reference()}
 }).
 
 %% ----------------------------------------------------------------------------
@@ -117,11 +118,13 @@ handle_info({tcp, _Socket, <<_Len:32, ?GENERIC_NACK:32, Status:32,
 %% ----------------------------------------------------------------------------
 handle_info({tcp, Socket, <<_Len:32, ?BIND_RECEIVER_RESP:32, ?ESME_ROK:32, 
                             _Seq:32, _Data/binary>>}, State) ->
+  {ok, TRef}  = keepalive(),
   {noreply, State#state{
     connected = true,
     binding   = ?BIND_RECEIVER,
     status    = ?ESME_ROK,
-    socket    = Socket
+    socket    = Socket,
+    tref      = TRef
   }};
 
 %% ----------------------------------------------------------------------------
@@ -129,11 +132,13 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_RECEIVER_RESP:32, ?ESME_ROK:32,
 %% ----------------------------------------------------------------------------
 handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, ?ESME_ROK:32, 
                             _Seq:32, _Data/binary>>}, State) ->
+  {ok, TRef}  = keepalive(),
   {noreply, State#state{
     connected = true,
     binding   = ?BIND_TRANSMITTER,
     status    = ?ESME_ROK,
-    socket    = Socket
+    socket    = Socket,
+    tref      = TRef
   }};
 
 %% ----------------------------------------------------------------------------
@@ -141,11 +146,13 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, ?ESME_ROK:32,
 %% ----------------------------------------------------------------------------
 handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSCEIVER_RESP:32, ?ESME_ROK:32,
                             _Seq:32, _Data/binary>>}, State) ->
+  {ok, TRef}  = keepalive(),
   {noreply, State#state{
     connected = true,
     binding   = ?BIND_TRANSCEIVER,
     status    = ?ESME_ROK,
-    socket    = Socket
+    socket    = Socket,
+    tref      = TRef
   }};
 
 %% ----------------------------------------------------------------------------
@@ -155,7 +162,7 @@ handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, ?ESME_ROK:32,
                               Seq:32, MessageId/binary>>}, 
                              #state{from_list=Clients} = State) ->
   Client = maps:get(Seq, Clients, '__undefined__'),
-  gen_server:reply(Client, {ok, strip_null(MessageId)}),
+  gen_server:reply(Client, {message_id, strip_null(MessageId)}),
   {noreply, State#state{
     from_list = maps:remove(Seq, Clients)
   }};
@@ -173,14 +180,34 @@ handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, Status:32,
   }};
 
 %% ----------------------------------------------------------------------------
+%% @private Keep-alive (enquire_link)
+%% ----------------------------------------------------------------------------
+handle_info(enquire_link, #state{socket=Socket, seq_num=SeqNum} = State) ->
+  NewSeqNum        = SeqNum + 1,
+  {pdu,    Packet} = esmpp_pdu:enquire_link(NewSeqNum),
+  send(Socket, Packet),
+  {noreply, State#state{
+    seq_num = NewSeqNum
+  }};
+
+%% ----------------------------------------------------------------------------
+%% @private Successful enquire_link 
+%% ----------------------------------------------------------------------------
+handle_info({tcp, _Socket, <<_Len:32, ?ENQUIRE_LINK_RESP:32, ?ESME_ROK:32,
+                             _Seq:32, _Data/binary>>}, State) ->
+  {noreply, State};
+
+%% ----------------------------------------------------------------------------
 %% @private Connection closed
 %% ----------------------------------------------------------------------------
-handle_info({tcp_closed, _Socket}, State) ->
+handle_info({tcp_closed, _Socket}, #state{tref=TRef} = State) ->
+  {ok, cancel} = timer:cancel(TRef),
   exit(disconnected),  
   {noreply, State#state{
     connected = false,
     status    = -1,
-    binding   = 0
+    binding   = 0,
+    seq_num   = 0
   }};
 
 %% ----------------------------------------------------------------------------
@@ -201,6 +228,10 @@ code_change(_OldVsn, State, _Extra) ->
 %% ----------------------------------------------------------------------------
 %% internal
 %% ----------------------------------------------------------------------------
+
+%% @private
+keepalive() ->
+  timer:send_interval(20000, enquire_link). 
 
 %% @private
 get_socket(Host, Port) ->
