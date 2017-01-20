@@ -65,13 +65,16 @@ submit_sm(SeqNumInt, SubmitSm) ->
   DstAddr      = iodata_to_cstring(SubmitSm#submit_sm_pdu.dst_addr,      21),
   ServiceType  = iodata_to_cstring(SubmitSm#submit_sm_pdu.service_type,  6),
   ShortMessage = SubmitSm#submit_sm_pdu.short_message,
+  OptParams    = SubmitSm#submit_sm_pdu.optional_params,
+  Tlv          = pack_tlv(OptParams, ?SUBMIT_SM_OPT_PARAMS),
   TmpPDU       = <<Command/binary, Status/binary, SeqNum/binary,
                    ServiceType/binary, SrcAddrTon/binary, SrcAddrNpi/binary,
                    SrcAddr/binary, DstAddrTon/binary, DstAddrNpi/binary,
                    DstAddr/binary, EsmClass/binary, ProtocolId/binary,
                    PriorityFlag/binary, DeliveryTime/binary, Validity/binary,
                    RegDelivery/binary, ReplaceFlag/binary, DataCoding/binary,
-                   MsgId/binary, SmLength/binary, ShortMessage/binary>>,
+                   MsgId/binary, SmLength/binary, ShortMessage/binary,
+                   Tlv/binary>>,
   Length       = pad4(binary:encode_unsigned(size(TmpPDU) + 4)),
   PDU          = <<Length/binary, TmpPDU/binary>>,
   {pdu, PDU}.
@@ -95,10 +98,18 @@ iodata_to_cstring(Data, _MaxLength) ->
 
 %% @private Pads erlang binary with max 2 octets
 pad2(Bin)        -> pad2(Bin, big).
-pad2(Bin, big)   -> <<0:((2 - (size(Bin) rem 2)) * 8), Bin/binary>>;
-pad2(Bin, small) -> <<Bin/binary, 0:((2 - (size(Bin) rem 2)) * 8)>>.
+pad2(Bin, big)   -> <<0:((2 - (size(Bin) rem 4)) * 8), Bin/binary>>;
+pad2(Bin, small) -> <<Bin/binary, 0:((2 - (size(Bin) rem 4)) * 8)>>.
 
 %% @private Pads erlang binary with max 4 octets
 pad4(Bin)        -> pad4(Bin, big).
 pad4(Bin, big)   -> <<0:((4 - (size(Bin) rem 4)) * 8), Bin/binary>>;
 pad4(Bin, small) -> <<Bin/binary, 0:((4 - (size(Bin) rem 4)) * 8)>>.
+
+%% @private Packs optional params map to TLV binary. Will also strip unknown keys
+pack_tlv(TmpParams, Keys) ->
+  OptParams = maps:with(Keys, TmpParams),
+  maps:fold(fun(Tag, Value, TmpTlv1) ->
+    TmpTlv2 = esmpp_tags:pack(Tag, Value),
+    <<TmpTlv1/binary, TmpTlv2/binary>> 
+  end, <<>>, OptParams). 
