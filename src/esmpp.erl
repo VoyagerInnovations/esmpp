@@ -29,6 +29,12 @@
 %%     see gen_server:start_link/4</dd>
 %% <dt><b>`mode'</b></dt>
 %% <dd>Type of SMPP binding for the client</dd>
+%% <dt><b>`callback_mo'</b></dt>
+%% <dd>Tuple of module and function atoms to be executed when a mobile
+%%     originating message has been received</dd>
+%% <dt><b>`callback_dr'</b></dt>
+%% <dd>Tuple of module and function atoms to be executed when a delivery 
+%%     receipt has been received</dd>
 %% <dt><b>`host'</b></dt>
 %% <dd>Hostname or IP address of the SMPP server</dd>
 %% <dt><b>`port'</b></dt>
@@ -75,6 +81,8 @@
 -spec start_link(Options) -> {ok, pid()} | ignore | {error, term()} 
   when Options    :: #{ name          => ServerName ,
                         mode          => Mode       ,
+                        callback_mo   => Callback   ,
+                        callback_dr   => Callback   ,
                         host          => iodata()   ,
                         port          => integer()  ,
                         system_id     => iodata()   ,
@@ -83,6 +91,7 @@
                         addr_ton      => integer()  ,
                         addr_npi      => integer()  ,
                         addr_range    => iodata()   },
+       Callback   :: {atom(), atom()},
        Mode       :: transmitter | transceiver | receiver,
        ServerName :: {local,  Name       :: atom()} |
                      {global, GlobalName :: term()} |

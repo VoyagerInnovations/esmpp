@@ -21,7 +21,9 @@
 -record(conn_state, {
   host              :: iodata(),
   port              :: integer(),
-  bind_record       :: bind_pdu()
+  bind_record       :: bind_pdu(),
+  callback_mo       :: {atom(), atom()},
+  callback_dr       :: {atom(), atom()}
 }).
 
 -record(state, {
@@ -45,11 +47,15 @@
 %% to the rest of the callbacks. This is to minimize footprint as these
 %% fields are only used in the lazy initialization
 %% ----------------------------------------------------------------------------
-init([#{host := Host, port := Port},  BindRecord]) ->
+init([#{host := Host, port := Port} = Opts,  BindRecord]) ->
+  CallbackMO = maps:get(callback_mo, Opts, {esmpp_dummy_receiver, mo}),
+  CallbackDR = maps:get(callback_dr, Opts, {esmpp_dummy_receiver, dr}),
   {ok, #conn_state{
     host        = Host,
     port        = Port,
-    bind_record = BindRecord
+    bind_record = BindRecord,
+    callback_mo = CallbackMO,
+    callback_dr = CallbackDR
   }, 0}.
 
 %% ----------------------------------------------------------------------------
@@ -111,15 +117,19 @@ handle_cast(_Message, State) ->
 %% to connect. This is a lazy initiation which gives the erlang supervisor
 %% enough time to wait for the connection to resume indefinitely
 %% ----------------------------------------------------------------------------
-handle_info(timeout, #conn_state{host=Host, port=Port, 
+handle_info(timeout, #conn_state{host=Host, port=Port,
+                                 callback_mo=CallbackMO,
+                                 callback_dr=CallbackDR, 
                                  bind_record=BindRecord}) ->
   timer:sleep(1000),
   {pdu,    Packet} = esmpp_pdu:bind(1, BindRecord),
   {socket, Socket} = get_socket(Host, Port),
   send(Socket, Packet),
   {noreply, #state{
-    seq_num   = 1,
-    socket    = Socket
+    seq_num     = 1,
+    socket      = Socket,
+    callback_mo = CallbackMO,
+    callback_dr = CallbackDR
   }};
 
 %% ----------------------------------------------------------------------------
