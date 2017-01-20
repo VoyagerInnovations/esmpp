@@ -115,13 +115,13 @@ start_link(Name, Module, Args) ->
 
 %% @see send_sms/5
 -spec send_sms(pid(), iodata(), iodata(), iodata()) -> {message_id, iodata()}.
-send_sms(Conn, Sender, Destination, Message) ->
-  send_sms(Conn, Sender, Destination, Message, #{}).
+send_sms(C, Sender, Destination, Message) ->
+  send_sms(C, Sender, Destination, Message, #{}).
 
 %% @see send_sms/6
 -spec send_sms(pid(), iodata(), iodata(), iodata(), map()) -> {message_id, iodata()}.
-send_sms(Conn, Sender, Destination, Message, Options) ->
-  send_sms(Conn, Sender, Destination, Message, Options, #{}).
+send_sms(C, Sender, Destination, Message, Options) ->
+  send_sms(C, Sender, Destination, Message, Options, #{}).
 
 %% @doc Sends a short message to the specified MSISDN
 %%
@@ -332,7 +332,7 @@ send_sms(Conn, Sender, Destination, Message, Options) ->
                             its_reply_type         => integer() ,
                             its_session_info       => integer() ,
                             ussd_service_op        => integer() }.
-send_sms(Conn, Sender, Destination, TmpMessage, Options, OptionalParams) ->
+send_sms(C, Sender, Destination, TmpMessage, Options, OptionalParams) ->
   ServiceType  = maps:get(service_type,  Options, <<0>>),
   ProtocolId   = maps:get(protocol_id,   Options, 0),
   PriorityFlag = maps:get(priority_flag, Options, 0),
@@ -365,11 +365,44 @@ send_sms(Conn, Sender, Destination, TmpMessage, Options, OptionalParams) ->
     short_message   = Message,
     optional_params = OptionalParams
   },
-  gen_server:call(Conn, {submit_sm, SubmitSm, Options}).
+  send_sm(C, SubmitSm, Message, DataCoding).
 
 %% ----------------------------------------------------------------------------
 %% internal
 %% ----------------------------------------------------------------------------
+
+%% @private
+send_sm(C, Sm, Message, DataCoding) when DataCoding =:= 0, size(Message) =< 160 ->
+  [gen_server:call(C, {submit_sm, Sm})];
+send_sm(C, Sm, Message, DataCoding) when DataCoding =:= 8, size(Message) =< 140 ->
+  [gen_server:call(C, {submit_sm, Sm})];
+send_sm(C, Sm, Message, DataCoding) when DataCoding =:= 0 ->
+  Ref   = random:uniform(255),
+  Size  = size(Message),
+  Parts = ceil(Size / 153),
+  send_sm(C, Sm, Message, <<>>, Ref, 1, Parts, 153, []);
+send_sm(C, Sm, Message, DataCoding) when DataCoding =:= 8 ->
+  Ref   = random:uniform(255),
+  Size  = size(Message),
+  Parts = ceil(Size / 134),
+  send_sm(C, Sm, Message, <<>>, Ref, 1, Parts, 134, []).
+
+send_sm(_C, _Sm, <<>>, _Tail, _Ref, _Part, _Parts, _Limit, Acc) ->
+  Acc;
+send_sm(C, Sm, Str, _Tail, Ref, Part, Parts, Limit, Acc) when size(Str) > Limit ->
+  <<BinPart:Limit/binary, BinTail/binary>> = Str,
+  send_sm(C, Sm, BinPart, BinTail, Ref, Part, Parts, Limit, Acc);
+send_sm(C, Sm, Str, Tail, Ref, Part, Parts, Limit, Acc) ->
+  Message = <<5, 0, 3, Ref, Parts, Part, Str/binary>>,
+  Length  = size(Message),
+  NewSm = Sm#submit_sm_pdu{
+    esm_class     = 16#40,
+    sm_length     = Length,
+    short_message = Message
+  },
+  NewAcc = Acc ++ [gen_server:call(C, {submit_sm, NewSm})],
+  send_sm(C, NewSm, Tail, <<>>, Ref, Part + 1, Parts, Limit, NewAcc).
+   
 
 %% @private
 get_binding(transmitter) -> {binding, ?BIND_TRANSMITTER};
@@ -424,3 +457,13 @@ encode(Message, 0) ->
   gsm0338:from_utf8(Message);
 encode(Message, 8) ->
   unicode:characters_to_binary(Message, utf8, utf16). 
+
+%% @private
+ceil(X) when X < 0 ->
+  trunc(X);
+ceil(X) ->
+  T = trunc(X),
+  case X - T == 0 of
+    true  -> T;
+    false -> T + 1
+  end.

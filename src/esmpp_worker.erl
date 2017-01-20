@@ -52,21 +52,21 @@ init([#{host := Host, port := Port},  BindRecord]) ->
 %% ----------------------------------------------------------------------------
 %% @private submit_sm attempt when not connected
 %% ----------------------------------------------------------------------------
-handle_call({submit_sm, _SubmitSm, _Options}, _From,
+handle_call({submit_sm, _SubmitSm}, _From,
              #state{connected=false} = State) ->
   {reply, {error, not_connected}, State}; 
 
 %% ----------------------------------------------------------------------------
 %% @private submit_sm attempt when bound as receiver
 %% ----------------------------------------------------------------------------
-handle_call({submit_sm, _SubmitSm, _Options}, _From,
+handle_call({submit_sm, _SubmitSm}, _From,
              #state{binding=?BIND_RECEIVER} = State) ->
   {reply, {error, not_allowed}, State}; 
 
 %% ----------------------------------------------------------------------------
 %% @private submit_sm packet sending
 %% ----------------------------------------------------------------------------
-handle_call({submit_sm, SubmitSm, _Options}, From, 
+handle_call({submit_sm, SubmitSm}, From, 
              #state{socket=Socket, seq_num=Seq, from_list=Clients} = State) ->
   NewSeq = increment(Seq),
   {pdu, Packet} = esmpp_pdu:submit_sm(NewSeq, SubmitSm), 
