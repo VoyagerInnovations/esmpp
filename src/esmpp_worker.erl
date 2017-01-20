@@ -249,7 +249,9 @@ handle_info({tcp_closed, _Socket}, #state{tref=TRef} = State) ->
 %% @private Catch all
 %% ----------------------------------------------------------------------------
 handle_info(_Info, State) ->
-  io:format("Warning Unknown Message: ~p", [_Info]),
+  io:format(standard_error, "[~p] Warning Unknown Message: ~p",[
+    ?MODULE, _Info
+  ]),
   {noreply, State}.
 
 %% @private

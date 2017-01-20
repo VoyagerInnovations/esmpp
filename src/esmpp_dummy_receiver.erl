@@ -9,9 +9,17 @@
 
 %% @private
 mo(Sender, Receiver, Message) ->
-  io:format(standard_error, "[~p] Warning - Un-acted message - Sender: ~p - Receiver: ~p - Message: ~p", [?MODULE, Sender, Receiver, Message]).
+  io:format(
+    standard_error,
+    "[~p] Warning - Un-acted message - Sender: ~p - Receiver: ~p - Message: ~p", 
+    [?MODULE, Sender, Receiver, Message]
+  ).
 
 %% @private
 dr(Sender, Receiver, Status) ->
-  io:format(standard_error, "[~p] Warning - Un-acted delivery receipt- Sender: ~p - Receiver: ~p - Status: ~p", [?MODULE, Sender, Receiver, Status]).
+  io:format(
+    standard_error, 
+    "[~p] Warning - Un-acted delivery receipt- Sender: ~p - Receiver: ~p - Status: ~p",
+    [?MODULE, Sender, Receiver, Status]
+  ).
 
