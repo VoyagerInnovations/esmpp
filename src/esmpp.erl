@@ -398,10 +398,11 @@ send_sm(C, Sm, Message, DataCoding) when DataCoding =:= 8 ->
   Parts = ceil(Size / 134),
   send_sm(C, Sm, Message, <<>>, Ref, 1, Parts, 134, []).
 
+%% @private
 send_sm(_C, _Sm, <<>>, _Tail, _Ref, _Part, _Parts, _Limit, Acc) ->
   Acc;
 send_sm(C, Sm, Str, _Tail, Ref, Part, Parts, Limit, Acc) when size(Str) > Limit ->
-  <<BinPart:Limit/binary, BinTail/binary>> = Str,
+  {BinPart, BinTail} = chop(Str, Limit),
   send_sm(C, Sm, BinPart, BinTail, Ref, Part, Parts, Limit, Acc);
 send_sm(C, Sm, Str, Tail, Ref, Part, Parts, Limit, Acc) ->
   Message = <<5, 0, 3, Ref, Parts, Part, Str/binary>>,
@@ -414,6 +415,22 @@ send_sm(C, Sm, Str, Tail, Ref, Part, Parts, Limit, Acc) ->
   NewAcc = Acc ++ [gen_server:call(C, {submit_sm, NewSm})],
   send_sm(C, NewSm, Tail, <<>>, Ref, Part + 1, Parts, Limit, NewAcc).
    
+%% @private
+chop(Str, 153 = Limit) ->
+  <<TmpPart:Limit/binary, TmpTail/binary>> = Str,
+  {TmpPart, TmpTail};
+chop(Str, Limit) ->
+  <<TmpPart:Limit/binary, TmpTail/binary>> = Str,
+  Utf8 = unicode:characters_to_binary(TmpPart, utf16),
+  analyze_unicode(Utf8, Str, Limit, TmpPart, TmpTail).
+
+%% @private
+analyze_unicode({incomplete, _U1, _U2}, Str, Limit, _TmpPart, _TmpTail) ->
+  chop(Str, Limit - 2);
+analyze_unicode({error, _U1, _U2}, Str, Limit, _TmpPart, _TmpTail) ->
+  chop(Str, Limit - 2);
+analyze_unicode(_Ok, _Str, _Limit, TmpPart, TmpTail) ->
+  {TmpPart, TmpTail}.
 
 %% @private
 get_binding(transmitter) -> {binding, ?BIND_TRANSMITTER};

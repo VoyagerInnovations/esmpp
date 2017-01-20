@@ -198,6 +198,13 @@ handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, Status:32,
   }};
 
 %% ----------------------------------------------------------------------------
+%% @private deliver_sm receiver 
+%% ----------------------------------------------------------------------------
+handle_info({tcp, _Socket, <<_Len:32, ?DELIVER_SM:32, ?ESME_ROK:32,
+                             _Seq:32, _Data/binary>>}, State) ->
+  {noreply, State};
+
+%% ----------------------------------------------------------------------------
 %% @private Keep-alive (enquire_link)
 %% ----------------------------------------------------------------------------
 handle_info(enquire_link, #state{socket=Socket, seq_num=SeqNum} = State) ->
