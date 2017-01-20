@@ -30,6 +30,8 @@
   binding   =  0    :: integer(),
   status    = -1    :: integer(),
   from_list = #{}   :: map(),
+  callback_mo       :: {atom(), atom()},
+  callback_dr       :: {atom(), atom()},
   socket            :: port(),
   tref              :: {integer(), reference()}
 }).
@@ -49,6 +51,22 @@ init([#{host := Host, port := Port},  BindRecord]) ->
     port        = Port,
     bind_record = BindRecord
   }, 0}.
+
+%% ----------------------------------------------------------------------------
+%% @private Assigns callback module and function for MOs
+%% ----------------------------------------------------------------------------
+handle_call({callback_mo, Module, Function}, _From, State) ->
+  {reply, ok, State#state{
+    callback_mo = {Module, Function}
+  }}; 
+
+%% ----------------------------------------------------------------------------
+%% @private Assigns callback module and function for DRs
+%% ----------------------------------------------------------------------------
+handle_call({callback_dr, Module, Function}, _From, State) ->
+  {reply, ok, State#state{
+    callback_dr = {Module, Function}
+  }}; 
 
 %% ----------------------------------------------------------------------------
 %% @private submit_sm attempt when not connected

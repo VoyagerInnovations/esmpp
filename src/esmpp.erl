@@ -13,7 +13,8 @@
   start_link/1,
   send_sms/4,
   send_sms/5,
-  send_sms/6
+  send_sms/6,
+  callback/3
 ]).
 
 -include("types.hrl").
@@ -366,6 +367,16 @@ send_sms(C, Sender, Destination, TmpMessage, Options, OptionalParams) ->
     optional_params = OptionalParams
   },
   send_sm(C, SubmitSm, Message, DataCoding).
+
+%% @doc Assigns callback to a mobile originating message or delivery receipt
+-spec callback(Type, atom(), atom()) -> ok | {error, invalid_type}
+  when Type :: message | delivery_receipt.
+callback(message, Module, Function) ->
+  gen_server:call(callback_mo, Module, Function);
+callback(delivery_receipt, Module, Function) ->
+  gen_server:call(callback_dr, Module, Function);
+callback(_Unknown, _Module, _Function) ->
+  {error, invalid_type}.
 
 %% ----------------------------------------------------------------------------
 %% internal
