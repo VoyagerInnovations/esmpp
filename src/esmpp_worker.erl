@@ -210,8 +210,25 @@ handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, Status:32,
 %% ----------------------------------------------------------------------------
 %% @private deliver_sm receiver 
 %% ----------------------------------------------------------------------------
-handle_info({tcp, _Socket, <<_Len:32, ?DELIVER_SM:32, ?ESME_ROK:32,
-                             _Seq:32, _Data/binary>>}, State) ->
+handle_info({tcp, Socket, <<_Len:32, ?DELIVER_SM:32, ?ESME_ROK:32,
+                             Seq:32, Data/binary>>},
+                             #state{callback_mo=MO,
+                                    callback_dr=DR} = State) ->
+  {cstring, _SvcType, Data2}      = get_cstring(Data),
+  <<_SrcTonNpi:16, Data3/binary>> = Data2,
+  {cstring, SrcAddr, Data4}       = get_cstring(Data3),
+  <<_DstTonNpi:16, Data5/binary>> = Data4,
+  {cstring, DstAddr, Data6}       = get_cstring(Data5),
+  <<EsmClass:8, Data7/binary>>    = Data6,
+  <<_Misc1:48, Data8/binary>>     = Data7,
+  <<DataCoding:8, Data9/binary>>  = Data8,
+  <<_Misc2:8, Data10/binary>>     = Data9,
+  <<Length:8, Data11/binary>>     = Data10,
+  <<Message:Length/binary, _Data12/binary>> = Data11,
+  FinalMessage  = normalize_encoding(DataCoding, Message),
+  {pdu, Packet} = esmpp_pdu:deliver_sm_resp(Seq),
+  send(Socket, Packet),
+  callback(SrcAddr, DstAddr, EsmClass, FinalMessage, MO, DR),
   {noreply, State};
 
 %% ----------------------------------------------------------------------------
@@ -266,7 +283,33 @@ code_change(_OldVsn, State, _Extra) ->
 %% internal
 %% ----------------------------------------------------------------------------
 
+%% @private Generic MO processing
+callback(SrcAddr, DstAddr, 0, Message, {Mod, Fun}, _DR) ->
+  apply(Mod, Fun, [SrcAddr, DstAddr, Message]);
+
+%% @private Generic DR processing
+callback(SrcAddr, DstAddr, 4, Message, _MO, {Mod, Fun}) ->
+  DeliveryReceipt = dr_to_map(Message),
+  apply(Mod, Fun, [SrcAddr, DstAddr, DeliveryReceipt]).
+
 %% @private
+normalize_encoding(8, Message) ->
+  unicode:characters_to_binary(Message, utf16, utf8);
+normalize_encoding(_DataCoding, Message) ->
+  Message.
+
+%% @private DR text to Erlang map
+dr_to_map(Bin) ->
+  Bin1  = binary:replace(Bin, <<"submit date">>, <<"submit_date">>),
+  Bin2  = binary:replace(Bin1, <<"done date">>, <<"done_date">>),
+  Parts = binary:split(Bin2, <<" ">>, [global]),
+  lists:foldl(fun(KeyPair, Acc) ->
+    [Key, Val] = binary:split(KeyPair, <<":">>),
+    maps:put(binary_to_atom(Key, utf8), Val, Acc)
+  end, #{}, Parts).
+
+
+%% @private 
 keepalive() ->
   timer:send_interval(20000, enquire_link). 
 
@@ -288,3 +331,21 @@ strip_null(Bin) ->
   Limit = size(Bin) - 1,
   <<BinPart:Limit/binary, _Null>> = Bin,
   BinPart.
+
+%% @private
+get_cstring(<<>>) ->
+  {error, empty_bin};
+get_cstring(Bin) ->
+  get_cstring([B || <<B:1/binary>> <= Bin], <<>>).
+
+%% @private
+get_cstring([<<0>> | Tail], AccBin) ->
+  {cstring, AccBin, bin_combine(Tail)};
+get_cstring([B | Tail], AccBin) ->
+  get_cstring(Tail, <<AccBin/binary, B/binary>>).
+
+%% @private
+bin_combine(BinList) ->
+  lists:foldl(fun(B, AccBin) ->
+    <<AccBin/binary, B/binary>>
+  end, <<>>, BinList).

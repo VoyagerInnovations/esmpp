@@ -11,7 +11,7 @@
 mo(Sender, Receiver, Message) ->
   io:format(
     standard_error,
-    "[~p] Warning - Un-acted message - Sender: ~p - Receiver: ~p - Message: ~p", 
+    "[~p] Warning - Un-acted message - Sender: ~p - Receiver: ~p - Message: ~p~n", 
     [?MODULE, Sender, Receiver, Message]
   ).
 
@@ -19,7 +19,7 @@ mo(Sender, Receiver, Message) ->
 dr(Sender, Receiver, Status) ->
   io:format(
     standard_error, 
-    "[~p] Warning - Un-acted delivery receipt- Sender: ~p - Receiver: ~p - Status: ~p",
+    "[~p] Warning - Un-acted delivery receipt- Sender: ~p - Receiver: ~p - Status: ~p~n",
     [?MODULE, Sender, Receiver, Status]
   ).
 

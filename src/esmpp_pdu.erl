@@ -7,7 +7,8 @@
 -export([
   bind/2,
   enquire_link/1,
-  submit_sm/2
+  submit_sm/2,
+  deliver_sm_resp/1
 ]).
 
 %% Internally exposed
@@ -91,6 +92,19 @@ submit_sm(SeqNumInt, SubmitSm) ->
   PDU          = <<Length/binary, TmpPDU/binary>>,
   {pdu, PDU}.
 
+%% @doc Encode a deliver_sm_resp PDU from a sequence number
+-spec deliver_sm_resp(integer()) -> {pdu, binary()}.
+deliver_sm_resp(SeqNumInt) ->
+  Status     = pad4(binary:encode_unsigned(?NULL)),
+  SeqNum     = pad4(binary:encode_unsigned(SeqNumInt)),
+  Command    = pad4(binary:encode_unsigned(?DELIVER_SM_RESP)),
+  MessageId  = binary:encode_unsigned(?NULL),
+  TmpPDU     = <<Command/binary, Status/binary, SeqNum/binary,
+                 MessageId/binary>>,
+  Length     = pad4(binary:encode_unsigned(size(TmpPDU) + 4)),
+  PDU        = <<Length/binary, TmpPDU/binary>>,
+  {pdu, PDU}.
+
 %% ----------------------------------------------------------------------------
 %% internal - but exposed nonetheless
 %% ----------------------------------------------------------------------------
@@ -109,11 +123,13 @@ iodata_to_cstring(Data, _MaxLength) ->
   <<DataBin/binary, 0>>.
 
 %% @private Pads erlang binary with max 2 octets
+pad2(Bin) when size(Bin) >= 2 -> Bin;
 pad2(Bin)        -> pad2(Bin, big).
 pad2(Bin, big)   -> <<0:((2 - (size(Bin) rem 4)) * 8), Bin/binary>>;
 pad2(Bin, small) -> <<Bin/binary, 0:((2 - (size(Bin) rem 4)) * 8)>>.
 
 %% @private Pads erlang binary with max 4 octets
+pad4(Bin) when size(Bin) >= 4 -> Bin;
 pad4(Bin)        -> pad4(Bin, big).
 pad4(Bin, big)   -> <<0:((4 - (size(Bin) rem 4)) * 8), Bin/binary>>;
 pad4(Bin, small) -> <<Bin/binary, 0:((4 - (size(Bin) rem 4)) * 8)>>.
