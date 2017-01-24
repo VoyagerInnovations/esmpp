@@ -366,7 +366,7 @@ handle_info({tcp, _Socket, <<_Len:32, ?ENQUIRE_LINK_RESP:32, ?ESME_ROK:32,
 %% @private Connection closed
 %% ----------------------------------------------------------------------------
 handle_info({tcp_closed, _Socket}, State) ->
-  exit(disconnected),  
+  exit(disconnected),
   {noreply, State#state{
     connected = false,
     status    = -1,
@@ -378,7 +378,7 @@ handle_info({tcp_closed, _Socket}, State) ->
 %% @private Catch all
 %% ----------------------------------------------------------------------------
 handle_info(_Info, State) ->
-  io:format(standard_error, "[~p] Warning Unknown Message: ~p",[
+  io:format(standard_error, "[~p] Warning Unknown Message: ~p", [
     ?MODULE, _Info
   ]),
   {noreply, State}.
