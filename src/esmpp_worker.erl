@@ -18,6 +18,13 @@
 -include("commands.hrl").
 -include("command_statuses.hrl").
 
+-record(mo_part, {
+  max_parts :: integer(),
+  src_addr  :: iodata(),
+  dst_addr  :: iodata(),
+  messages  :: [iodata()]
+}).
+
 -record(conn_state, {
   host              :: iodata(),
   port              :: integer(),
@@ -27,15 +34,16 @@
 }).
 
 -record(state, {
-  connected = false :: boolean(), 
-  seq_num   =  1    :: integer(),
-  binding   =  0    :: integer(),
-  status    = -1    :: integer(),
-  from_list = #{}   :: map(),
-  callback_mo       :: {atom(), atom()},
-  callback_dr       :: {atom(), atom()},
-  socket            :: port(),
-  tref              :: {integer(), reference()}
+  connected   = false :: boolean(), 
+  seq_num     =  1    :: integer(),
+  binding     =  0    :: integer(),
+  status      = -1    :: integer(),
+  from_list   = #{}   :: map(),
+  concat_list = #{}   :: map(),
+  callback_mo         :: {atom(), atom()},
+  callback_dr         :: {atom(), atom()},
+  socket              :: port(),
+  tref                :: {integer(), reference()}
 }).
 
 %% ----------------------------------------------------------------------------
@@ -210,10 +218,8 @@ handle_info({tcp, _Socket, <<_Len:32, ?SUBMIT_SM_RESP:32, Status:32,
 %% ----------------------------------------------------------------------------
 %% @private deliver_sm receiver 
 %% ----------------------------------------------------------------------------
-handle_info({tcp, Socket, <<_Len:32, ?DELIVER_SM:32, ?ESME_ROK:32,
-                             Seq:32, Data/binary>>},
-                             #state{callback_mo=MO,
-                                    callback_dr=DR} = State) ->
+handle_info({tcp, Socket, <<_Len:32, ?DELIVER_SM:32, ?ESME_ROK:32, Seq:32,
+                            Data/binary>>}, State) ->
   {cstring, _SvcType, Data2}      = get_cstring(Data),
   <<_SrcTonNpi:16, Data3/binary>> = Data2,
   {cstring, SrcAddr, Data4}       = get_cstring(Data3),
@@ -228,7 +234,78 @@ handle_info({tcp, Socket, <<_Len:32, ?DELIVER_SM:32, ?ESME_ROK:32,
   FinalMessage  = normalize_encoding(DataCoding, Message),
   {pdu, Packet} = esmpp_pdu:deliver_sm_resp(Seq),
   send(Socket, Packet),
-  callback(SrcAddr, DstAddr, EsmClass, FinalMessage, MO, DR),
+  erlang:send(self(), {callback, EsmClass, SrcAddr, DstAddr, FinalMessage}),
+  {noreply, State};
+
+%% ----------------------------------------------------------------------------
+%% @private Chopped MO event (complete)
+%% ----------------------------------------------------------------------------
+
+handle_info({chopped_mo, Key, #mo_part{max_parts=MaxParts, src_addr=SrcAddr,
+                                       dst_addr=DstAddr, messages=Messages}},
+                                #state{concat_list=ConcatMap} = State)
+                                  when length(Messages) >= MaxParts ->
+  SortedMessages = lists:keysort(1, Messages),
+  Message = lists:foldl(fun({_Part, MsgPart}, Acc) -> 
+    <<Acc/binary, MsgPart/binary>> 
+  end, <<>>, SortedMessages),
+  erlang:send(self(), {callback, 0, SrcAddr, DstAddr, Message}),
+  NewConcatMap = maps:remove(Key, ConcatMap),
+  {noreply, State#state{
+    concat_list = NewConcatMap
+  }};
+
+%% ----------------------------------------------------------------------------
+%% @private Chopped MO event (incomplete)
+%% ----------------------------------------------------------------------------
+
+handle_info({chopped_mo, _Key, _MOPart}, State) ->
+  {noreply, State};
+
+%% ----------------------------------------------------------------------------
+%% @private Callback from deliver_sm - Chopped MO
+%% ----------------------------------------------------------------------------
+
+handle_info({callback, 64, SrcAddr, DstAddr, <<UDH:6/binary, MsgPart/binary>>}, 
+                                     #state{concat_list=ConcatMap} = State) ->
+  <<_Misc:24, Ref:8, Parts:8, Part:8>> = UDH,
+  RefBin       = integer_to_binary(Ref),
+  KeyBin       = <<SrcAddr/binary, ":", DstAddr/binary, ":", RefBin/binary>>,
+  MOPart       = #mo_part{
+    max_parts  = Parts,
+    src_addr   = SrcAddr,
+    dst_addr   = DstAddr,
+    messages   = []
+  },
+  CurrMOPart   = maps:get(KeyBin, ConcatMap, MOPart),
+  CurrPairs    = CurrMOPart#mo_part.messages,
+  PartPair     = {Part, MsgPart},
+  NewMOPart    = CurrMOPart#mo_part{
+    messages   = CurrPairs ++ [PartPair]
+  },
+  NewConcatMap = maps:put(KeyBin, NewMOPart, ConcatMap),
+  erlang:send(self(), {chopped_mo, KeyBin, NewMOPart}),
+  {noreply, State#state{
+    concat_list = NewConcatMap
+  }};
+
+%% ----------------------------------------------------------------------------
+%% @private Callback from deliver_sm - Generic MO
+%% ----------------------------------------------------------------------------
+
+handle_info({callback, 0, SrcAddr, DstAddr, Message}, 
+                                     #state{callback_mo={Mod, Fun}} = State) ->
+  spawn(Mod, Fun, [SrcAddr, DstAddr, Message]),
+  {noreply, State};
+
+%% ----------------------------------------------------------------------------
+%% @private Callback from deliver_sm - Generic DR
+%% ----------------------------------------------------------------------------
+
+handle_info({callback, 4, SrcAddr, DstAddr, Message}, 
+                                     #state{callback_dr={Mod, Fun}} = State) ->
+  DeliveryReceipt = dr_to_map(Message),
+  spawn(Mod, Fun, [SrcAddr, DstAddr, DeliveryReceipt]),
   {noreply, State};
 
 %% ----------------------------------------------------------------------------
@@ -282,15 +359,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% ----------------------------------------------------------------------------
 %% internal
 %% ----------------------------------------------------------------------------
-
-%% @private Generic MO processing
-callback(SrcAddr, DstAddr, 0, Message, {Mod, Fun}, _DR) ->
-  apply(Mod, Fun, [SrcAddr, DstAddr, Message]);
-
-%% @private Generic DR processing
-callback(SrcAddr, DstAddr, 4, Message, _MO, {Mod, Fun}) ->
-  DeliveryReceipt = dr_to_map(Message),
-  apply(Mod, Fun, [SrcAddr, DstAddr, DeliveryReceipt]).
 
 %% @private
 normalize_encoding(8, Message) ->
