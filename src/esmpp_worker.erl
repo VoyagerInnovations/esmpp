@@ -146,7 +146,7 @@ handle_info(timeout, #conn_state{host=Host, port=Port,
 handle_info({tcp, _Socket, <<_Len:32, ?GENERIC_NACK:32, Status:32,
                              _Seq:32, _Data/binary>>} = PDU, State) ->
   StatusAtom = esmpp_status:to_atom(Status),
-  io:format("[generic_nack] ~p: ~p", [StatusAtom, PDU]),
+  io:format(standard_error, "[generic_nack] ~p: ~p", [StatusAtom, PDU]),
   {noreply, State};
 
 %% ----------------------------------------------------------------------------
@@ -164,6 +164,18 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_RECEIVER_RESP:32, ?ESME_ROK:32,
   }};
 
 %% ----------------------------------------------------------------------------
+%% @private Error binding as receiver
+%% ----------------------------------------------------------------------------
+handle_info({tcp, _Socket, <<_Len:32, ?BIND_RECEIVER_RESP:32, Status:32, 
+                             _Seq:32, _Data/binary>>}, State) ->
+  
+  StatusAtom = esmpp_status:to_atom(Status),
+  io:format(standard_error, "[bind_receiver_resp] ~p", [StatusAtom]),
+  {noreply, State#state{
+    status    = Status
+  }};
+
+%% ----------------------------------------------------------------------------
 %% @private Successfully binded as transmitter
 %% ----------------------------------------------------------------------------
 handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, ?ESME_ROK:32, 
@@ -178,6 +190,18 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, ?ESME_ROK:32,
   }};
 
 %% ----------------------------------------------------------------------------
+%% @private Error binding as transmitter
+%% ----------------------------------------------------------------------------
+handle_info({tcp, _Socket, <<_Len:32, ?BIND_TRANSMITTER_RESP:32, Status:32, 
+                             _Seq:32, _Data/binary>>}, State) ->
+  
+  StatusAtom = esmpp_status:to_atom(Status),
+  io:format(standard_error, "[bind_transmitter_resp] ~p", [StatusAtom]),
+  {noreply, State#state{
+    status    = Status
+  }};
+
+%% ----------------------------------------------------------------------------
 %% @private Successfully binded as transceiver 
 %% ----------------------------------------------------------------------------
 handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSCEIVER_RESP:32, ?ESME_ROK:32,
@@ -189,6 +213,18 @@ handle_info({tcp, Socket, <<_Len:32, ?BIND_TRANSCEIVER_RESP:32, ?ESME_ROK:32,
     status    = ?ESME_ROK,
     socket    = Socket,
     tref      = TRef
+  }};
+
+%% ----------------------------------------------------------------------------
+%% @private Error binding as transceiver
+%% ----------------------------------------------------------------------------
+handle_info({tcp, _Socket, <<_Len:32, ?BIND_TRANSCEIVER_RESP:32, Status:32, 
+                             _Seq:32, _Data/binary>>}, State) ->
+  
+  StatusAtom = esmpp_status:to_atom(Status),
+  io:format(standard_error, "[bind_transceiver_resp] ~p", [StatusAtom]),
+  {noreply, State#state{
+    status    = Status
   }};
 
 %% ----------------------------------------------------------------------------
@@ -329,8 +365,7 @@ handle_info({tcp, _Socket, <<_Len:32, ?ENQUIRE_LINK_RESP:32, ?ESME_ROK:32,
 %% ----------------------------------------------------------------------------
 %% @private Connection closed
 %% ----------------------------------------------------------------------------
-handle_info({tcp_closed, _Socket}, #state{tref=TRef} = State) ->
-  {ok, cancel} = timer:cancel(TRef),
+handle_info({tcp_closed, _Socket}, State) ->
   exit(disconnected),  
   {noreply, State#state{
     connected = false,
