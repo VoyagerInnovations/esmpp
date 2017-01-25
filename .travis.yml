@@ -1,0 +1,7 @@
+language: erlang
+otp_release:
+   - 18.3
+   - 19.1
+before_script:
+  - "./bootstrap_travis.sh"
+script: "./rebar3 compile"
