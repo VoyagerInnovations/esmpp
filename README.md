@@ -21,7 +21,7 @@ Other commands will be supported in the future versions.
 
 ## Setup
 
-**esmpp** can be added as a dependency via [hex.ph](https://hex.pm/packages/esmpp)
+**esmpp** can be added as a dependency via [hex.pm](https://hex.pm/packages/esmpp)
 
 ```erlang
 {deps, [
