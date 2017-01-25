@@ -1,4 +1,0 @@
-[{<<"gsm0338">>,
-  {git,"https://github.com/iamaleksey/gsm0338",
-       {ref,"da2cc18bed0b89776ae47f3473ec8b4bb58eb956"}},
-  0}].
