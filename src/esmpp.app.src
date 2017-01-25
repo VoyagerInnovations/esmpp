@@ -1,15 +1,14 @@
 {application, esmpp,
- [{description, "An OTP library"},
-  {vsn, "0.1.0"},
+ [{description, "SMPP client library for Erlang"},
+  {vsn, "0.0.1"},
   {registered, []},
-  {applications,
-   [kernel,
-    stdlib
-   ]},
+  {applications, [kernel, stdlib]},
   {env,[]},
   {modules, []},
 
-  {maintainers, []},
-  {licenses, []},
-  {links, []}
+  {maintainers, ["Ruel Pagayon"]},
+  {licenses, ["MIT"]},
+  {links, [
+    {"Github", "https://github.com/VoyagerInnovations/esmpp"}
+  ]}
  ]}.
