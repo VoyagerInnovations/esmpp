@@ -1,6 +1,6 @@
 # esmpp - Erlang/OTP SMPP Client
 
-[![Build Status](https://travis-ci.org/voyagerinnovations/esmpp.svg?branch=master)](https://travis-ci.org/voyagerinnovations/esmpp) [![Hex.pm](https://img.shields.io/hexpm/v/esmpp.svg)](https://hex.pm/packages/esmpp)
+[![Build Status](https://travis-ci.org/VoyagerInnovations/esmpp.svg?branch=master)](https://travis-ci.org/VoyagerInnovations/esmpp) [![Hex.pm](https://img.shields.io/hexpm/v/esmpp.svg)](https://hex.pm/packages/esmpp)
 
 **esmpp** connects erlang applications to SMSCs via the SMPP v3.4 protocol.
 
