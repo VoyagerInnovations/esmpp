@@ -25,7 +25,7 @@ Other commands will be supported in the future versions.
 
 ```erlang
 {deps, [
-  {firebase_token, "0.0.1"}
+  {esmpp, "0.0.1"}
 ]}. 
 ```
 
