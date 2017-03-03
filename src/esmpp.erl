@@ -483,7 +483,7 @@ get_data_coding(Message) ->
 is_basic_latin([]) -> 0;
 is_basic_latin([Char | Rest]) ->
   case binary:decode_unsigned(Char) of
-    Val when Val < 128 ->
+    Val when Val < 128, Val =/= 96 ->
       is_basic_latin(Rest);
     _Val ->
       8
