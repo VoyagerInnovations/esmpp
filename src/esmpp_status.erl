@@ -55,4 +55,5 @@ to_atom(?ESME_RINVPARLEN)       -> invalid_param_length;
 to_atom(?ESME_RMISSINGOPTPARAM) -> optional_param_missing;
 to_atom(?ESME_RINVOPTPARAMVAL)  -> invalid_optional_param_val;
 to_atom(?ESME_RDELIVERYFAILURE) -> delivery_failure;
-to_atom(?ESME_RUNKNOWNERR)      -> unknown_error.
+to_atom(?ESME_RUNKNOWNERR)      -> unknown_error;
+to_atom(Error)                  -> {vender_error, Error}.
