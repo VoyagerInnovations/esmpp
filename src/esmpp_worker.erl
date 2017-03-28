@@ -29,6 +29,7 @@
   host              :: iodata(),
   port              :: integer(),
   bind_record       :: bind_pdu(),
+  reconnect         :: integer(),
   callback_mo       :: {atom(), atom()},
   callback_dr       :: {atom(), atom()}
 }).
@@ -58,9 +59,12 @@
 init([#{host := Host, port := Port} = Opts,  BindRecord]) ->
   CallbackMO = maps:get(callback_mo, Opts, {esmpp_dummy_receiver, mo}),
   CallbackDR = maps:get(callback_dr, Opts, {esmpp_dummy_receiver, dr}),
+  ReconTerm  = maps:get(reconnect, Opts, 1000),
+  Reconnect  = get_reconnect(ReconTerm, Host, Port),
   {ok, #conn_state{
     host        = Host,
     port        = Port,
+    reconnect   = Reconnect,
     bind_record = BindRecord,
     callback_mo = CallbackMO,
     callback_dr = CallbackDR
@@ -126,10 +130,11 @@ handle_cast(_Message, State) ->
 %% enough time to wait for the connection to resume indefinitely
 %% ----------------------------------------------------------------------------
 handle_info(timeout, #conn_state{host=Host, port=Port,
+                                 reconnect=Reconnect,
                                  callback_mo=CallbackMO,
                                  callback_dr=CallbackDR, 
                                  bind_record=BindRecord}) ->
-  timer:sleep(1000),
+  timer:sleep(Reconnect),
   {pdu,    Packet} = esmpp_pdu:bind(1, BindRecord),
   {socket, Socket} = get_socket(Host, Port),
   send(Socket, Packet),
@@ -452,3 +457,14 @@ bin_combine(BinList) ->
   lists:foldl(fun(B, AccBin) ->
     <<AccBin/binary, B/binary>>
   end, <<>>, BinList).
+
+%% @private
+get_reconnect({Module, Function}, Host, Port) ->
+  HostBin = esmpp_format:ensure_binary(Host),
+  PortBin = esmpp_format:ensure_binary(Port),
+  Id      = <<"id_", HostBin/binary, ":", PortBin/binary>>,
+  apply(Module, Function, [Id]);
+get_reconnect(Time, _Host, _Port) when is_integer(Time) ->
+  Time;
+get_reconnect(_Unknown, _Host, _Port) ->
+  1000.

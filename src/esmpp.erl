@@ -35,6 +35,10 @@
 %% <dt><b>`callback_dr'</b></dt>
 %% <dd>Tuple of module and function atoms to be executed when a delivery 
 %%     receipt has been received</dd>
+%% <dt><b>`reconnect'</b></dt>
+%% <dd>Reconnect time for lazy initialization. This indicates the number of milliseconds
+%%     to sleep before attempting to connect to the SMSC. This accepts a module and function
+%%     atom tuple for external sources.</dd>
 %% <dt><b>`host'</b></dt>
 %% <dd>Hostname or IP address of the SMPP server</dd>
 %% <dt><b>`port'</b></dt>
@@ -83,6 +87,7 @@
                         mode          => Mode       ,
                         callback_mo   => Callback   ,
                         callback_dr   => Callback   ,
+                        reconnect     => Reconnect  , 
                         host          => iodata()   ,
                         port          => integer()  ,
                         system_id     => iodata()   ,
@@ -93,6 +98,7 @@
                         addr_range    => iodata()   },
        Callback   :: {atom(), atom()},
        Mode       :: transmitter | transceiver | receiver,
+       Reconnect  :: integer() | {atom(), atom()},
        ServerName :: {local,  Name       :: atom()} |
                      {global, GlobalName :: term()} |
                      {via,    Module     :: atom(), ViaName :: term()}.
