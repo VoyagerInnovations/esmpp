@@ -71,6 +71,18 @@ init([#{host := Host, port := Port} = Opts,  BindRecord]) ->
   }, 0}.
 
 %% ----------------------------------------------------------------------------
+%% @private Checks if the process is currently connected to the SMSC 
+%% ----------------------------------------------------------------------------
+handle_call(is_connected, _From, #state{connected=Connected} = State) ->
+  {reply, {status, Connected}, State}; 
+
+%% ----------------------------------------------------------------------------
+%% @private Default catcher for the alternative connecting state
+%% ----------------------------------------------------------------------------
+handle_call(is_connected, _From, #conn_state{} = State) ->
+  {reply, {status, false}, State}; 
+
+%% ----------------------------------------------------------------------------
 %% @private Assigns callback module and function for MOs
 %% ----------------------------------------------------------------------------
 handle_call({callback_mo, Module, Function}, _From, State) ->

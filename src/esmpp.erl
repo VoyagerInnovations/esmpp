@@ -11,6 +11,7 @@
 
 -export([
   start_link/1,
+  is_connected/1,
   send_sms/4,
   send_sms/5,
   send_sms/6,
@@ -382,6 +383,11 @@ send_sms(C, Sender, Destination, TmpMessage, Options, OptionalParams) ->
     optional_params = OptionalParams
   },
   send_sm(C, SubmitSm, Message, DataCoding).
+ 
+%% @doc Checks the connection status of esmpp to the SMSC
+-spec is_connected(pid()) -> {status, boolean()}.
+is_connected(C) ->
+  gen_server:call(C, is_connected).
 
 %% @doc Assigns callback to a mobile originating message or delivery receipt
 -spec callback(Type, atom(), atom()) -> ok | {error, invalid_type}
