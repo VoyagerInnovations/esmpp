@@ -15,7 +15,7 @@
   send_sms/4,
   send_sms/5,
   send_sms/6,
-  callback/3
+  callback/4
 ]).
 
 -include("types.hrl").
@@ -390,13 +390,13 @@ is_connected(C) ->
   gen_server:call(C, is_connected).
 
 %% @doc Assigns callback to a mobile originating message or delivery receipt
--spec callback(Type, atom(), atom()) -> ok | {error, invalid_type}
+-spec callback(pid(), Type, atom(), atom()) -> ok | {error, invalid_type}
   when Type :: message | delivery_receipt.
-callback(message, Module, Function) ->
-  gen_server:call(callback_mo, Module, Function);
-callback(delivery_receipt, Module, Function) ->
-  gen_server:call(callback_dr, Module, Function);
-callback(_Unknown, _Module, _Function) ->
+callback(C, message, Module, Function) ->
+  gen_server:call(C, {callback_mo, Module, Function});
+callback(C, delivery_receipt, Module, Function) ->
+  gen_server:call(C, {callback_dr, Module, Function});
+callback(_C, _Unknown, _Module, _Function) ->
   {error, invalid_type}.
 
 %% ----------------------------------------------------------------------------
