@@ -383,10 +383,9 @@ handle_info({callback, 4, SrcAddr, DstAddr, Message},
   {noreply, State};
 
 %% ----------------------------------------------------------------------------
-%% @private Cancel  timer reference on enquire_link after unbind
+%% @private Handle enquire_link after unbind
 %% ----------------------------------------------------------------------------
-handle_info(enquire_link, #state{connected=false, tref=TRef} = State) ->
-  timer:cancel(TRef),
+handle_info(enquire_link, #state{connected=false} = State) ->
   {noreply, State};
 
 %% ----------------------------------------------------------------------------
@@ -410,7 +409,8 @@ handle_info({tcp, _Socket, <<_Len:32, ?ENQUIRE_LINK_RESP:32, ?ESME_ROK:32,
 %% ----------------------------------------------------------------------------
 %% @private Connection closed from unbind
 %% ----------------------------------------------------------------------------
-handle_info({tcp_closed, _Socket}, #state{connected=false} = State) ->
+handle_info({tcp_closed, _Socket}, #state{connected=false, tref=TRef} = State) ->
+  timer:cancel(TRef),
   {noreply, State};
 
 %% ----------------------------------------------------------------------------
