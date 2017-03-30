@@ -132,6 +132,17 @@ handle_call({submit_sm, SubmitSm}, From,
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
+%% ----------------------------------------------------------------------------
+%% @private unbind packet sending
+%% ----------------------------------------------------------------------------  
+handle_cast(unbind, #state{socket=Socket, seq_num=Seq} = State) ->
+  NewSeq = increment(Seq),
+  {pdu, Packet} = esmpp_pdu:unbind(NewSeq),
+  send(Socket, Packet), 
+  {noreply, State#state{
+    seq_num = NewSeq
+  }};
+
 %% @private
 handle_cast(_Message, State) ->
   {noreply, State}.
@@ -343,6 +354,16 @@ handle_info({callback, 64, SrcAddr, DstAddr, <<UDH:6/binary, MsgPart/binary>>},
   }};
 
 %% ----------------------------------------------------------------------------
+%% @private Successful UNBIND_RESP
+%% ----------------------------------------------------------------------------
+handle_info({tcp, _Socket, <<_Len:32, ?UNBIND_RESP:32,  ?ESME_ROK:32,
+                             _Seq:32, _Data/binary>>}, State) ->
+  {noreply, State#state{
+    connected = false,
+    seq_num = 0
+  }};
+
+%% ----------------------------------------------------------------------------
 %% @private Callback from deliver_sm - Generic MO
 %% ----------------------------------------------------------------------------
 
@@ -362,6 +383,13 @@ handle_info({callback, 4, SrcAddr, DstAddr, Message},
   {noreply, State};
 
 %% ----------------------------------------------------------------------------
+%% @private Cancel  timer reference on enquire_link after unbind
+%% ----------------------------------------------------------------------------
+handle_info(enquire_link, #state{connected=false, tref=TRef} = State) ->
+  timer:cancel(TRef),
+  {noreply, State};
+
+%% ----------------------------------------------------------------------------
 %% @private Keep-alive (enquire_link)
 %% ----------------------------------------------------------------------------
 handle_info(enquire_link, #state{socket=Socket, seq_num=SeqNum} = State) ->
@@ -377,6 +405,12 @@ handle_info(enquire_link, #state{socket=Socket, seq_num=SeqNum} = State) ->
 %% ----------------------------------------------------------------------------
 handle_info({tcp, _Socket, <<_Len:32, ?ENQUIRE_LINK_RESP:32, ?ESME_ROK:32,
                              _Seq:32, _Data/binary>>}, State) ->
+  {noreply, State};
+
+%% ----------------------------------------------------------------------------
+%% @private Connection closed from unbind
+%% ----------------------------------------------------------------------------
+handle_info({tcp_closed, _Socket}, #state{connected=false} = State) ->
   {noreply, State};
 
 %% ----------------------------------------------------------------------------
