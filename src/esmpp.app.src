@@ -1,12 +1,12 @@
 {application, esmpp,
  [{description, "SMPP client library for Erlang"},
-  {vsn, "0.0.4"},
+  {vsn, "0.0.5"},
   {registered, []},
   {applications, [kernel, stdlib]},
   {env,[]},
   {modules, []},
 
-  {maintainers, ["Ruel Pagayon"]},
+  {maintainers, ["Ruel Pagayon", "Jorick Caberio"]},
   {licenses, ["MIT"]},
   {links, [
     {"Github", "https://github.com/VoyagerInnovations/esmpp"}

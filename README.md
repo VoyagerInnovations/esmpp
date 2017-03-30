@@ -25,7 +25,7 @@ Other commands will be supported in the future versions.
 
 ```erlang
 {deps, [
-  {esmpp, "0.0.4"}
+  {esmpp, "0.0.5"}
 ]}. 
 ```
 
