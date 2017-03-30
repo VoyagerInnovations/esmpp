@@ -15,7 +15,8 @@
   send_sms/4,
   send_sms/5,
   send_sms/6,
-  callback/4
+  callback/4,
+  unbind/1
 ]).
 
 -include("types.hrl").
@@ -398,6 +399,10 @@ callback(C, delivery_receipt, Module, Function) ->
   gen_server:call(C, {callback_dr, Module, Function});
 callback(_C, _Unknown, _Module, _Function) ->
   {error, invalid_type}.
+
+%% @doc Unbind SMPP connection 
+unbind(C) ->
+  gen_server:cast(C, unbind).
 
 %% ----------------------------------------------------------------------------
 %% internal

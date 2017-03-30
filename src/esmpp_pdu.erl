@@ -8,7 +8,8 @@
   bind/2,
   enquire_link/1,
   submit_sm/2,
-  deliver_sm_resp/1
+  deliver_sm_resp/1,
+  unbind/1
 ]).
 
 %% Internally exposed
@@ -104,6 +105,17 @@ deliver_sm_resp(SeqNumInt) ->
   Length     = pad4(binary:encode_unsigned(size(TmpPDU) + 4)),
   PDU        = <<Length/binary, TmpPDU/binary>>,
   {pdu, PDU}.
+
+%% @doc Encode an unbind PDU from a sequence number
+-spec unbind(integer()) -> {pdu, binary()}.
+unbind(SeqNumInt) ->
+  Status     = pad4(binary:encode_unsigned(?NULL)),
+  SeqNum     = pad4(binary:encode_unsigned(SeqNumInt)),
+  Command    = pad4(binary:encode_unsigned(?UNBIND)),
+  TmpPDU     = <<Command/binary, Status/binary, SeqNum/binary>>, 
+  Length     = pad4(binary:encode_unsigned(size(TmpPDU) + 4)), 
+  PDU        = <<Length/binary, TmpPDU/binary>>,  
+  {pdu, PDU}.  
 
 %% ----------------------------------------------------------------------------
 %% internal - but exposed nonetheless
