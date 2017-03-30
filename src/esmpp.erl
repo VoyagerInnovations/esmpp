@@ -401,6 +401,7 @@ callback(_C, _Unknown, _Module, _Function) ->
   {error, invalid_type}.
 
 %% @doc Unbind SMPP connection 
+-spec unbind(pid()) -> ok.
 unbind(C) ->
   gen_server:cast(C, unbind).
 
