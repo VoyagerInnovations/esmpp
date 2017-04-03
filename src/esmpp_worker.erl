@@ -148,16 +148,19 @@ handle_cast(_Message, State) ->
   {noreply, State}.
 
 %% ----------------------------------------------------------------------------
-%% @private This does the actual connection. Sleep for 3s, then attempt
-%% to connect. This is a lazy initiation which gives the erlang supervisor
-%% enough time to wait for the connection to resume indefinitely
+%% @private Handles the reconnection timeout (default 1s)
 %% ----------------------------------------------------------------------------
-handle_info(timeout, #conn_state{host=Host, port=Port,
-                                 reconnect=Reconnect,
+handle_info(timeout, #conn_state{reconnect=Reconnect} = State) ->
+  erlang:send_after(Reconnect, self(), connect),
+  {noreply, State};
+
+%% ----------------------------------------------------------------------------
+%% @private Does the actual connection to the remote SMSC
+%% ----------------------------------------------------------------------------
+handle_info(connect, #conn_state{host=Host, port=Port,
                                  callback_mo=CallbackMO,
                                  callback_dr=CallbackDR, 
                                  bind_record=BindRecord}) ->
-  timer:sleep(Reconnect),
   {pdu,    Packet} = esmpp_pdu:bind(1, BindRecord),
   {socket, Socket} = get_socket(Host, Port),
   send(Socket, Packet),
