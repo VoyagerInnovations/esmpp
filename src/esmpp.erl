@@ -132,12 +132,12 @@ start_link(Name, Module, Args) ->
   gen_server:start_link(Name, Module, Args, []).
 
 %% @see send_sms/5
--spec send_sms(pid(), iodata(), iodata(), iodata()) -> [{message_id, iodata()}] | {error, atom()}.
+-spec send_sms(pid(), iodata(), iodata(), iodata()) -> [{message_id, iodata()} | {error, atom()}].
 send_sms(C, Sender, Destination, Message) ->
   send_sms(C, Sender, Destination, Message, #{}).
 
 %% @see send_sms/6
--spec send_sms(pid(), iodata(), iodata(), iodata(), map()) -> [{message_id, iodata()}] | {error, atom()}.
+-spec send_sms(pid(), iodata(), iodata(), iodata(), map()) -> [{message_id, iodata()} | {error, atom()}].
 send_sms(C, Sender, Destination, Message, Options) ->
   send_sms(C, Sender, Destination, Message, Options, #{}).
 
@@ -314,7 +314,7 @@ send_sms(C, Sender, Destination, Message, Options) ->
 %%   <p>`18 - USSR confirm'</p>
 %%   <p>`19 - USSN confirm'</p>
 %% </dd>
--spec send_sms(pid(), iodata(), iodata(), iodata(), Options, OptionalParams) -> [{message_id, iodata()}] | {error, atom()}
+-spec send_sms(pid(), iodata(), iodata(), iodata(), Options, OptionalParams) -> [{message_id, iodata()} | {error, atom()}]
   when Options        :: #{ service_type           => iodata()  ,
                             protocol_id            => integer() ,
                             priority_flag          => integer() ,

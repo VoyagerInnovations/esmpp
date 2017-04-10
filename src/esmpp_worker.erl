@@ -44,7 +44,7 @@
   callback_mo         :: {atom(), atom()},
   callback_dr         :: {atom(), atom()},
   socket              :: port(),
-  tref                :: {integer(), reference()}
+  tref                :: timer:tref()
 }).
 
 %% ----------------------------------------------------------------------------

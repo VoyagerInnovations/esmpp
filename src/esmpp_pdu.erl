@@ -137,14 +137,14 @@ iodata_to_cstring(Data, _MaxLength) ->
 %% @private Pads erlang binary with max 2 octets
 pad2(Bin) when size(Bin) >= 2 -> Bin;
 pad2(Bin)        -> pad2(Bin, big).
-pad2(Bin, big)   -> <<0:((2 - (size(Bin) rem 4)) * 8), Bin/binary>>;
-pad2(Bin, small) -> <<Bin/binary, 0:((2 - (size(Bin) rem 4)) * 8)>>.
+pad2(Bin, big)   -> <<0:((2 - (size(Bin) rem 4)) * 8), Bin/binary>>.
+% pad2(Bin, small) -> <<Bin/binary, 0:((2 - (size(Bin) rem 4)) * 8)>>.
 
 %% @private Pads erlang binary with max 4 octets
 pad4(Bin) when size(Bin) >= 4 -> Bin;
 pad4(Bin)        -> pad4(Bin, big).
-pad4(Bin, big)   -> <<0:((4 - (size(Bin) rem 4)) * 8), Bin/binary>>;
-pad4(Bin, small) -> <<Bin/binary, 0:((4 - (size(Bin) rem 4)) * 8)>>.
+pad4(Bin, big)   -> <<0:((4 - (size(Bin) rem 4)) * 8), Bin/binary>>.
+% pad4(Bin, small) -> <<Bin/binary, 0:((4 - (size(Bin) rem 4)) * 8)>>.
 
 %% @private Packs optional params map to TLV binary. Will also strip unknown keys
 pack_tlv(TmpParams, Keys) ->
