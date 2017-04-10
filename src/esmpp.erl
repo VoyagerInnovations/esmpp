@@ -19,6 +19,10 @@
   unbind/1
 ]).
 
+-type serverRef() :: atom() | {atom(), atom()} | pid() |
+                   {global, GlobalName :: term()} |
+                   {via,    Module     :: atom(), ViaName :: term()}.
+
 -include("types.hrl").
 -include("commands.hrl").
 
@@ -132,12 +136,12 @@ start_link(Name, Module, Args) ->
   gen_server:start_link(Name, Module, Args, []).
 
 %% @see send_sms/5
--spec send_sms(pid(), iodata(), iodata(), iodata()) -> [{message_id, iodata()} | {error, atom()}].
+-spec send_sms(serverRef(), iodata(), iodata(), iodata()) -> [{message_id, iodata()} | {error, atom()}].
 send_sms(C, Sender, Destination, Message) ->
   send_sms(C, Sender, Destination, Message, #{}).
 
 %% @see send_sms/6
--spec send_sms(pid(), iodata(), iodata(), iodata(), map()) -> [{message_id, iodata()} | {error, atom()}].
+-spec send_sms(serverRef(), iodata(), iodata(), iodata(), map()) -> [{message_id, iodata()} | {error, atom()}].
 send_sms(C, Sender, Destination, Message, Options) ->
   send_sms(C, Sender, Destination, Message, Options, #{}).
 
@@ -314,7 +318,7 @@ send_sms(C, Sender, Destination, Message, Options) ->
 %%   <p>`18 - USSR confirm'</p>
 %%   <p>`19 - USSN confirm'</p>
 %% </dd>
--spec send_sms(pid(), iodata(), iodata(), iodata(), Options, OptionalParams) -> [{message_id, iodata()} | {error, atom()}]
+-spec send_sms(serverRef(), iodata(), iodata(), iodata(), Options, OptionalParams) -> [{message_id, iodata()} | {error, atom()}]
   when Options        :: #{ service_type           => iodata()  ,
                             protocol_id            => integer() ,
                             priority_flag          => integer() ,
@@ -386,12 +390,12 @@ send_sms(C, Sender, Destination, TmpMessage, Options, OptionalParams) ->
   send_sm(C, SubmitSm, Message, DataCoding).
  
 %% @doc Checks the connection status of esmpp to the SMSC
--spec is_connected(pid()) -> {status, boolean()}.
+-spec is_connected(serverRef()) -> {status, boolean()}.
 is_connected(C) ->
   gen_server:call(C, is_connected).
 
 %% @doc Assigns callback to a mobile originating message or delivery receipt
--spec callback(pid(), Type, atom(), atom()) -> ok | {error, invalid_type}
+-spec callback(serverRef(), Type, atom(), atom()) -> ok | {error, invalid_type}
   when Type :: message | delivery_receipt.
 callback(C, message, Module, Function) ->
   gen_server:call(C, {callback_mo, Module, Function});
@@ -401,7 +405,7 @@ callback(_C, _Unknown, _Module, _Function) ->
   {error, invalid_type}.
 
 %% @doc Unbind SMPP connection 
--spec unbind(pid()) -> ok.
+-spec unbind(serverRef()) -> ok.
 unbind(C) ->
   gen_server:cast(C, unbind).
 
