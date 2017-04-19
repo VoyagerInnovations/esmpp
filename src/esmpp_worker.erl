@@ -461,10 +461,15 @@ dr_to_map(Bin) ->
   Bin2  = binary:replace(Bin1, <<"done date">>, <<"done_date">>),
   Parts = binary:split(Bin2, <<" ">>, [global]),
   lists:foldl(fun(KeyPair, Acc) ->
-    [Key, Val] = binary:split(KeyPair, <<":">>),
-    maps:put(binary_to_atom(Key, utf8), Val, Acc)
+    build_map(binary:split(KeyPair, <<":">>), Acc)
   end, #{}, Parts).
 
+%% @private Builds actual DR map
+build_map([Key, Val], Acc) ->
+  maps:put(binary_to_atom(Key, utf8), Val, Acc);
+build_map([Val], Acc) ->
+  TmpText = maps:get(text, Acc, <<>>),
+  maps:put(text, <<TmpText/binary, " ", Val/binary>>, Acc).
 
 %% @private 
 keepalive() ->
