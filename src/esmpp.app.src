@@ -1,6 +1,6 @@
 {application, esmpp,
  [{description, "SMPP client library for Erlang"},
-  {vsn, "0.0.9"},
+  {vsn, "0.0.10"},
   {registered, []},
   {applications, [kernel, stdlib]},
   {env,[]},
