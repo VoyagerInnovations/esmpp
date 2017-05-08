@@ -18,7 +18,7 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %%% THE SOFTWARE.
 
--module(gsm0338).
+-module(esmpp_gsm0338).
 
 -export([from_utf8/1, to_utf8/1]).
 

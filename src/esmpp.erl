@@ -513,7 +513,7 @@ is_basic_latin([Char | Rest]) ->
 
 %% @private
 encode(Message, 0) ->
-  gsm0338:from_utf8(Message);
+  esmpp_gsm0338:from_utf8(Message);
 encode(Message, 8) ->
   unicode:characters_to_binary(Message, utf8, utf16). 
 
