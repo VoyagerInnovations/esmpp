@@ -382,7 +382,7 @@ handle_info({callback, 0, SrcAddr, DstAddr, Message},
 handle_info({callback, 4, SrcAddr, DstAddr, Message}, 
                                      #state{callback_dr={Mod, Fun}} = State) ->
   DeliveryReceipt = dr_to_map(Message),
-  spawn(Mod, Fun, [SrcAddr, DstAddr, DeliveryReceipt]),
+  spawn(Mod, Fun, [smpp, SrcAddr, DstAddr, DeliveryReceipt]),
   {noreply, State};
 
 %% ----------------------------------------------------------------------------
