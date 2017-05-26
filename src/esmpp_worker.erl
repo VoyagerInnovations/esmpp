@@ -61,6 +61,7 @@ init([#{host := Host, port := Port} = Opts,  BindRecord]) ->
   CallbackDR = maps:get(callback_dr, Opts, {esmpp_dummy_receiver, dr}),
   ReconTerm  = maps:get(reconnect, Opts, 1000),
   Reconnect  = get_reconnect(ReconTerm, Host, Port),
+  erlang:send_after(Reconnect, self(), connect),
   {ok, #conn_state{
     host        = Host,
     port        = Port,
@@ -68,7 +69,7 @@ init([#{host := Host, port := Port} = Opts,  BindRecord]) ->
     bind_record = BindRecord,
     callback_mo = CallbackMO,
     callback_dr = CallbackDR
-  }, 0}.
+  }}.
 
 %% ----------------------------------------------------------------------------
 %% @private Checks if the process is currently connected to the SMSC 
@@ -146,13 +147,6 @@ handle_cast(unbind, #state{socket=Socket, seq_num=Seq} = State) ->
 %% @private
 handle_cast(_Message, State) ->
   {noreply, State}.
-
-%% ----------------------------------------------------------------------------
-%% @private Handles the reconnection timeout (default 1s)
-%% ----------------------------------------------------------------------------
-handle_info(timeout, #conn_state{reconnect=Reconnect} = State) ->
-  erlang:send_after(Reconnect, self(), connect),
-  {noreply, State};
 
 %% ----------------------------------------------------------------------------
 %% @private Does the actual connection to the remote SMSC
