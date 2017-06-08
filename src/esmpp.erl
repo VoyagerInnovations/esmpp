@@ -450,9 +450,9 @@ send_sm(C, Sm, Str, Tail, Ref, Part, Parts, Limit, Acc) ->
 chop(Str, 153 = Limit) ->
   <<TmpPart:Limit/binary, TmpTail/binary>> = Str,
   case TmpPart of
-    <<_Rest:152/binary, 16#1B>> ->
-      <<TmpPart2:152/binary, TmpTail2/binary>> = Str,
-      {TmpPart2, TmpTail2};
+    <<Rest:152/binary, 16#1B>> ->
+      <<Rest:152/binary, TmpTail2/binary>> = Str,
+      {Rest, TmpTail2};
     _Ok ->
       {TmpPart, TmpTail}
   end;
